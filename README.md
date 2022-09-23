@@ -141,7 +141,7 @@ class RelayNodeGraphQLDataSource {
       ? this.encoder1
       : this.encoder2;
 
-    return await handleRelayRequest(request, encoder.encode, encoder.decode);
+    return await handleRelayRequest(request, {...encoder});
   }
 }
 
