@@ -53,6 +53,19 @@ install them.
 Returns `Promise<object[]>`: A promise representing the list of entity objects
 containing a relay-spec compliant `id` value.
 
+### `generateFroidSchema`
+
+| Parameter Name             | Required | Description                                                                                           | Type                    | Default                |
+| -------------------------- | -------- | ----------------------------------------------------------------------------------------------------- | ----------------------- | ---------------------- |
+| `subgraphSchemaMap`        | Yes      | A mapping of subgraph names --> subgraph SDLs used to generate the relay object identification schema | `Map<string, string>`   |                        |
+| `relayServiceName`         | Yes      | The name of the relay subgraph service                                                                | `string`                |                        |
+| `options`                  |          | Optional configuration for schema generation                                                          | see specific properties | `{}`                   |
+| `options.contractTags`     |          | A list of supported contract tags                                                                     | `string[]`              | `[]`                   |
+| `options.federatedVersion` |          | The version of federation to generate schema for                                                      | `FederationVersion`     | `FederationVersion.V2` |
+| `options.typeExceptions`   |          | Types to exclude from `id` field generation                                                           | `string[]`              | `[]`                   |
+
+Returns `DocumentNode[]`: The Relay Object Identification schema
+
 ## Usage
 
 Use this space to show useful examples of how a project can be used. Additional
