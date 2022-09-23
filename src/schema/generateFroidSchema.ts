@@ -1,0 +1,402 @@
+import {
+  ConstDirectiveNode,
+  DefinitionNode,
+  DocumentNode,
+  FieldDefinitionNode,
+  Kind,
+  NameNode,
+  ObjectTypeDefinitionNode,
+  OperationDefinitionNode,
+  StringValueNode,
+  UnionTypeDefinitionNode,
+  parse,
+} from 'graphql';
+import {
+  ID_FIELD_NAME,
+  EXTENDS_DIRECTIVE,
+  KEY_DIRECTIVE,
+  TAG_DIRECTIVE,
+} from './constants';
+import {
+  nodeInterface,
+  implementsNodeInterface,
+  externalDirective,
+} from './astDefinitions';
+import {isRootType} from './isRootType';
+import {createTagDirective} from './createTagDirective';
+import {createQueryDefinition} from './createQueryDefinition';
+import {createIdField} from './createIdField';
+import {createRelayUnionDefinition} from './createRelayUnionDefinition';
+import {createLinkSchemaExtension} from './createLinkSchemaExtension';
+import {createFederationV1TagDirectiveDefinition} from './createFederationV1TagDirectiveDefinition';
+import {
+  ObjectTypeNode,
+  KeyMappingRecord,
+  ValidKeyDirective,
+  RelayObjectType,
+} from './types';
+
+/**
+ * Returns all non-root types and extended types
+ *
+ * @param {DefinitionNode[]} nodes - Root schema AST nodes
+ * @returns {ObjectTypeNode[]} Only ObjectTypeDefinition + ObjectExtensionDefinition nodes that aren't root types
+ */
+function getNonRootObjectTypes(nodes: DefinitionNode[]): ObjectTypeNode[] {
+  return nodes.filter(
+    (node) =>
+      (node.kind === Kind.OBJECT_TYPE_DEFINITION ||
+        node.kind === Kind.OBJECT_TYPE_EXTENSION) &&
+      !isRootType(node.name.value)
+  ) as ObjectTypeNode[];
+}
+
+/**
+ * Returns all non-extended types with explicit ownership to a single subgraph
+ *
+ * @param {DefinitionNode[]} nodes - Schema AST Nodes
+ * @returns {ObjectTypeNode[]} Only ObjectTypeDefinition + ObjectExtensionDefinition nodes that aren't root types
+ */
+function getObjectDefinitions(
+  nodes: ObjectTypeNode[]
+): ObjectTypeDefinitionNode[] {
+  return nodes.filter(
+    (node) =>
+      node.kind === Kind.OBJECT_TYPE_DEFINITION && // only type definitions
+      !node.directives?.some(
+        (directive) => directive.name.value === EXTENDS_DIRECTIVE
+      ) // no @extends directive
+  ) as ObjectTypeDefinitionNode[];
+}
+
+/**
+ * Returns all non-extended types with explicit ownership to a single subgraph
+ *
+ * @param {ObjectTypeDefinitionNode} node - The node to process `@key` directives for
+ * @returns {ValidKeyDirective} The matching directive to use for generating the Global Object Identifier
+ */
+function selectValidKeyDirective(
+  node: ObjectTypeDefinitionNode
+): ValidKeyDirective | undefined {
+  const keyDirectives = node.directives?.filter(
+    (directive) => directive.name.value === KEY_DIRECTIVE
+  );
+
+  if (!keyDirectives || keyDirectives.length === 0) {
+    return;
+  }
+
+  // get field names that are @key to the entity
+  const firstValidKeyDirectiveFields = keyDirectives
+    .map((directive) => directive.arguments)
+    .flat()
+    .map((arg) => arg?.value as StringValueNode)
+    .filter(Boolean)
+    .map((strNode) => strNode.value)
+    // Protect against people using the `id` field as an entity key
+    .filter((keys) => keys !== ID_FIELD_NAME)[0];
+
+  if (!firstValidKeyDirectiveFields) {
+    return;
+  }
+
+  // Wrap in a query in order to generate valid AST to crawl
+  const keyDirectiveFields = parse(`query {${firstValidKeyDirectiveFields}}`);
+
+  const mapChildFields = (fields, result) => {
+    fields.map((field) => {
+      if (field.selectionSet) {
+        result[field.name.value] = {};
+        mapChildFields(field.selectionSet.selections, result[field.name.value]);
+      } else {
+        result[field.name.value] = null;
+      }
+    });
+  };
+
+  const operationDefinition = keyDirectiveFields
+    .definitions[0] as OperationDefinitionNode;
+  const keyMappingRecord: KeyMappingRecord = {};
+  mapChildFields(operationDefinition.selectionSet.selections, keyMappingRecord);
+
+  const keyDirective = keyDirectives.find(
+    (directive) =>
+      (directive?.arguments?.[0]?.value as StringValueNode).value ===
+      firstValidKeyDirectiveFields
+  );
+
+  if (!keyDirective) {
+    throw new Error("Valid @key directive can't be found");
+  }
+
+  return {keyDirective, keyMappingRecord};
+}
+
+/**
+ * Returns all non-extended types with explicit ownership to a single subgraph
+ *
+ * @param {ObjectTypeDefinitionNode} node - The node to process `@key` directives for
+ * @param {ObjectTypeNode[]} objectNodes - The node to process `@key` directives for
+ * @returns {ConstDirectiveNode[]} A list of `@tag` directives to use for the given `id` field
+ */
+function getTagDirectivesForIdField(
+  node: ObjectTypeDefinitionNode,
+  objectNodes: ObjectTypeNode[]
+): ConstDirectiveNode[] {
+  const tagDirectiveNames = objectNodes
+    .filter((obj) => obj.name.value === node.name.value)
+    .flatMap((obj) => {
+      const result = obj.fields?.flatMap((field) =>
+        field.directives
+          ?.filter((directive) => directive.name.value === TAG_DIRECTIVE)
+          .map(
+            (directive) =>
+              (directive?.arguments?.[0].value as StringValueNode).value
+          )
+      );
+      return result;
+    })
+    .filter(Boolean)
+    .sort() as string[];
+
+  const tagDirectives: ConstDirectiveNode[] = [];
+  const uniqueTagDirectivesNames = [...new Set(tagDirectiveNames || [])];
+
+  uniqueTagDirectivesNames.forEach((tagName) => {
+    tagDirectives.push(createTagDirective(tagName));
+  });
+
+  return tagDirectives;
+}
+
+/**
+ * Generates key field nodes
+ * Includes `@external` directive for Federation V1 generation
+ *
+ * @param {ObjectTypeDefinitionNode} node - The node to decorate
+ * @param {KeyMappingRecord} keyMappingRecord - The list of key fields for the node
+ * @param {FederationVersion} federationVersion - The version of federation to generate schema for
+ * @returns {FieldDefinitionNode[]} A list field definitions
+ */
+function getKeyFields(
+  node: ObjectTypeNode,
+  keyMappingRecord: KeyMappingRecord,
+  federationVersion: FederationVersion
+): FieldDefinitionNode[] {
+  const keyFieldNames = Object.keys(keyMappingRecord);
+
+  return (
+    node.fields
+      // take only @key fields and add @external directive to each of these
+      ?.filter((field) => keyFieldNames.includes(field.name.value))
+      .map(
+        (field): FieldDefinitionNode => ({
+          ...field,
+          description: undefined,
+          directives:
+            federationVersion === FederationVersion.V1
+              ? [externalDirective]
+              : [],
+        })
+      ) || []
+  );
+}
+
+/**
+ * Generates object types required to support complex nested keys
+ * Includes `@external` directive for Federation V1 generation
+ *
+ * @param {ObjectTypeDefinitionNode[]} definitionNodes - All definition nodes in the schema
+ * @param {FederationVersion} federationVersion - The version of federation to generate schema for
+ * @param {Record<string, RelayObjectType>} objectTypes - Something here
+ * @param {FieldDefinitionNode[]} fields - The fields
+ * @param {KeyMappingRecord} keyMapping - The list of key fields for the node
+ * @returns {FieldDefinitionNode[]} A list field definitions
+ */
+function generateComplexKeyObjectTypes(
+  definitionNodes,
+  federationVersion,
+  objectTypes,
+  fields,
+  keyMapping
+) {
+  return Object.keys(keyMapping).flatMap((key) => {
+    if (keyMapping[key]) {
+      const currentField = fields.find((field) => field.name.value === key);
+      const currentNode = definitionNodes.find(
+        (node) => node.name.value === currentField.type.name.value
+      );
+
+      if (!currentNode) {
+        return;
+      }
+
+      const subKeyFields = getKeyFields(
+        currentNode,
+        keyMapping[key],
+        federationVersion
+      );
+
+      objectTypes[currentNode.name.value] = {
+        includeInUnion: false,
+        node: {
+          kind:
+            federationVersion === FederationVersion.V1
+              ? Kind.OBJECT_TYPE_EXTENSION
+              : Kind.OBJECT_TYPE_DEFINITION,
+          name: currentNode.name,
+          fields: subKeyFields,
+        },
+      };
+
+      generateComplexKeyObjectTypes(
+        definitionNodes,
+        federationVersion,
+        objectTypes,
+        subKeyFields,
+        keyMapping[key]
+      );
+    }
+  });
+}
+
+export enum FederationVersion {
+  V1,
+  V2,
+}
+
+export type GenerateRelayServiceSchemaOptions = {
+  contractTags?: string[];
+  federationVersion?: FederationVersion;
+  typeExceptions?: string[];
+};
+
+/**
+ * Generates the schema for the Relay Object Identification service
+ *
+ * @param {Map<string, string>} subgraphSchemaMap - A subgraphName -> subgraphSDL mapping used to generate the relay schema
+ * @param {string} froidSubgraphName - The name of the relay subgraph service
+ * @param {object} options - Additional configuration options for generating relay-complaint schemas
+ * @param {string[]} options.contractTags - A list of supported contract tags
+ * @param {FederationVersion} options.federationVersion - The version of federation to generate schema for
+ * @param {string[]} options.typeExceptions - Types to exclude from `id` field generation
+ * @returns {DocumentNode[]} The Relay Object Identification schema
+ */
+export function generateFroidSchema(
+  subgraphSchemaMap: Map<string, string>,
+  froidSubgraphName: string,
+  options: GenerateRelayServiceSchemaOptions = {}
+): DocumentNode {
+  // defaults
+  const federationVersion = options?.federationVersion ?? FederationVersion.V2;
+  const typeExceptions = options?.typeExceptions || [];
+  const allTagDirectives: ConstDirectiveNode[] =
+    options?.contractTags?.sort().map((tag) => createTagDirective(tag)) || [];
+
+  const currentSchemaMap = new Map<string, string>(subgraphSchemaMap);
+  // Must remove self from map of subgraphs before regenerating schema
+  currentSchemaMap.delete(froidSubgraphName);
+
+  // convert to a flat map of document nodes
+  const subgraphs = [...currentSchemaMap.values()].map((sdl) => parse(sdl));
+
+  // extract all definition nodes for federated schema
+  const allDefinitionNodes = subgraphs.reduce<DefinitionNode[]>(
+    (accumulator, value) => accumulator.concat(value.definitions),
+    []
+  );
+  const extenstionAndDefinitionNodes =
+    getNonRootObjectTypes(allDefinitionNodes);
+  const definitionNodes = getObjectDefinitions(extenstionAndDefinitionNodes);
+
+  // generate list of object types we need to generate the relay schema
+  const relayObjectTypes: Record<string, RelayObjectType> =
+    definitionNodes.reduce(
+      (
+        objectTypes: Record<string, RelayObjectType>,
+        node: ObjectTypeDefinitionNode
+      ) => {
+        const isException = typeExceptions.some(
+          (exception) => node.name.value === exception
+        );
+
+        if (isException) {
+          return objectTypes;
+        }
+
+        const validKeyDirective = selectValidKeyDirective(node);
+
+        if (!validKeyDirective) {
+          return objectTypes;
+        }
+
+        const {keyMappingRecord, keyDirective} = validKeyDirective;
+
+        const keyFields = getKeyFields(
+          node,
+          keyMappingRecord,
+          federationVersion
+        );
+
+        const idTagDirectives = getTagDirectivesForIdField(
+          node,
+          extenstionAndDefinitionNodes
+        );
+
+        objectTypes[node.name.value] = {
+          includeInUnion: true,
+          node: {
+            kind:
+              federationVersion === FederationVersion.V1
+                ? Kind.OBJECT_TYPE_EXTENSION
+                : Kind.OBJECT_TYPE_DEFINITION,
+            name: node.name,
+            interfaces: [implementsNodeInterface],
+            directives: [keyDirective],
+            fields: [createIdField(idTagDirectives), ...keyFields],
+          },
+        };
+
+        generateComplexKeyObjectTypes(
+          definitionNodes,
+          federationVersion,
+          objectTypes,
+          keyFields,
+          keyMappingRecord
+        );
+
+        return objectTypes;
+      },
+      {}
+    );
+
+  // build union type from all entity types
+  const unionTypeAst: UnionTypeDefinitionNode = createRelayUnionDefinition(
+    Object.keys(relayObjectTypes)
+      .map((key) => {
+        const entity = relayObjectTypes[key];
+        return entity.includeInUnion ? entity.node.name : null;
+      })
+      .filter(Boolean) as NameNode[],
+    allTagDirectives
+  );
+
+  const tagDefinition =
+    federationVersion === FederationVersion.V1
+      ? createFederationV1TagDirectiveDefinition()
+      : createLinkSchemaExtension(['@key', '@tag']);
+
+  // build schema
+  const schema: DocumentNode = {
+    kind: Kind.DOCUMENT,
+    definitions: [
+      tagDefinition,
+      unionTypeAst,
+      createQueryDefinition(allTagDirectives),
+      nodeInterface,
+      ...Object.values(relayObjectTypes).map((objectType) => objectType.node),
+    ],
+  };
+
+  return schema;
+}
