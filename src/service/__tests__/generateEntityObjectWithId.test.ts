@@ -50,7 +50,10 @@ describe('generateEntityObjectWithId', () => {
     ];
     const encode = (value) => `abc${value}abc`;
 
-    const result = await generateEntityObjectWithId({representations, encode});
+    const result = await generateEntityObjectWithId(
+      {representations},
+      {encode}
+    );
 
     expect(result).toEqual({
       data: {

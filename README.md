@@ -55,8 +55,9 @@ This library has `peerDependencies` listings for `graphql` and `graphql-relay`.
 | `request`           | Yes      | The request object passed to the froid subgraph           | see specific properties               |                                        |
 | `request.query`     | Yes      | The query string for the request                          | `string`                              |                                        |
 | `request.variables` | Yes      | The variables for the request                             | `Record<string, unknown>`             |                                        |
-| `encode`            |          | A callback for encoding the object identify key values    | `(string) => string`                  | `(value) => value`                     |
-| `decode`            |          | A callback for decoding an object identifier's key values | `(string) => Record<string, unknown>` | `(keyString) => JSON.parse(keyString)` |
+| `options`           |          | Configuration options available to `handleFroidRequest`   | see specific properties               | `{}`                                   |
+| `options.encode`    |          | A callback for encoding the object identify key values    | `(string) => string`                  | `(value) => value`                     |
+| `options.decode`    |          | A callback for decoding an object identifier's key values | `(string) => Record<string, unknown>` | `(keyString) => JSON.parse(keyString)` |
 
 Returns `Promise<object[]>`: A promise representing the list of entity objects
 containing a relay-spec compliant `id` value.
@@ -140,7 +141,7 @@ class FroidLDataSource {
       ? this.encoder1
       : this.encoder2;
 
-    return await handleFroidRequest(request, encoder.encode, encoder.decode);
+    return await handleFroidRequest(request, {...encoder});
   }
 }
 

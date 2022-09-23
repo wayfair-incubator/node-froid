@@ -53,7 +53,7 @@ describe('handleFroidRequest', () => {
           query,
           variables,
         },
-        encode
+        {encode}
       );
 
       expect(result).toEqual({
@@ -124,8 +124,9 @@ describe('handleFroidRequest', () => {
 
       const result = await handleFroidRequest(
         {query, variables},
-        undefined,
-        decode
+        {
+          decode,
+        }
       );
 
       expect(result).toEqual({
