@@ -95,22 +95,24 @@ describe('generateEntityObjectsById', () => {
       return JSON.parse(decodedValue);
     };
 
-    const result = await generateEntityObjectsById({
-      query: gql`
-        query GetAuthor($id: ID!) {
-          node(id: $id) {
-            ... on Author {
-              id
-              firstName
-              lastName
-              fullName
+    const result = await generateEntityObjectsById(
+      {
+        query: gql`
+          query GetAuthor($id: ID!) {
+            node(id: $id) {
+              ... on Author {
+                id
+                firstName
+                lastName
+                fullName
+              }
             }
           }
-        }
-      `,
-      variables: {id},
-      decode,
-    });
+        `,
+        variables: {id},
+      },
+      {decode}
+    );
 
     expect(result).toEqual({
       data: {

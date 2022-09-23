@@ -37,10 +37,13 @@ function findIdValue(field, variables): string | null {
   }
 }
 
+export type GenerateEntityObjectsByIdOptions = {
+  decode?: DecodeCallback;
+};
+
 export type GenerateEntityObjectsByIdArguments = {
   query: string;
   variables?: Record<string, any>;
-  decode?: DecodeCallback;
 };
 
 /**
@@ -49,14 +52,16 @@ export type GenerateEntityObjectsByIdArguments = {
  * @param {object} object - Container object injected into the generateEntityObjectsById function
  * @param {string} object.query - Query document being executed
  * @param {object} object.variables - Variables used to execute the request
- * @param {decoderCallback} object.decode - Decoding method used to derive the key arguments
+ * @param {object} options - Optional options for configuring generateEntityObjectsById
+ * @param {decoderCallback} options.decode - Decoding method used to derive the key arguments
  * @returns {Promise<Array.<object>>} Promise representing the list of entity objects with a relay-spec compliant `id` value
  */
-export function generateEntityObjectsById({
-  query,
-  variables,
-  decode = (keyString) => JSON.parse(keyString),
-}: GenerateEntityObjectsByIdArguments): Promise<NodeResponse> {
+export function generateEntityObjectsById(
+  {query, variables}: GenerateEntityObjectsByIdArguments,
+  options?: GenerateEntityObjectsByIdOptions
+): Promise<NodeResponse> {
+  const decode = options?.decode || ((keyString) => JSON.parse(keyString));
+
   // Parse the query document so that we can visit each node
   const parsedQuery = parse(query);
 
