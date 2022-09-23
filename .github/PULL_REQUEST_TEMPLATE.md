@@ -19,10 +19,8 @@ much longer to review, or result in it not being reviewed at all.
 
 ## Checklist
 
-<!-- TODO: Update the link below to point to your project's contributing guidelines -->
-
 - [ ] I have read the
-      [contributing guidelines](https://github.com/wayfair-incubator/oss-template/blob/main/CONTRIBUTING.md)
+      [contributing guidelines](https://github.com/wayfair-incubator/node-froid/blob/main/CONTRIBUTING.md)
 - [ ] Existing issues have been referenced (where applicable)
 - [ ] I have verified this change is not present in other open pull requests
 - [ ] Functionality is documented

@@ -1,7 +1,7 @@
 # Security Policies and Procedures
 
 This document outlines security procedures and general policies for the
-`<project name>` project.
+`NodeJS - Federated Relay Object Identification` project.
 
 - [Reporting a Bug](#reporting-a-bug)
 - [Disclosure Policy](#disclosure-policy)
@@ -9,9 +9,9 @@ This document outlines security procedures and general policies for the
 
 ## Reporting a Bug
 
-The `<project name>` team and community take all security bugs in
-`<project name>` seriously. Thank you for improving the security of
-`<project name>`. We appreciate your efforts and responsible disclosure and will
+The `NodeJS - Federated Relay Object Identification` team and community take all security bugs in
+`NodeJS - Federated Relay Object Identification` seriously. Thank you for improving the security of
+`NodeJS - Federated Relay Object Identification`. We appreciate your efforts and responsible disclosure and will
 make every effort to acknowledge your contributions.
 
 Report security bugs by emailing `OpenSource@wayfair.com`.
