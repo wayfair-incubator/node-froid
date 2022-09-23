@@ -7,36 +7,44 @@
 
 ## About The Project
 
-Provide some information about what the project is/does.
+### The problem
+
+There isn't good support for the Relay's [Object Identification] spec in the
+Federated GraphQL ecosystem. This makes it difficult to support common patterns
+used to refrech objects from your graph to power things like cache TTLs and
+cache-miss hydration.
+
+### The solution
+
+`@wayfair/node-froid` provides two key pieces of functionality:
+
+- **id processing**: a solution that can be used to run inline as part of a
+  custom [Data Source] or as a completely separate subgraph (recommended)
+  dedicated to service your object identification implementation .
+- **schema generation**: a schema generation script that reflects on all
+  subgraphs in your federated graph and generates a valid relay object
+  identification schema.
+  - Can run in Federation v1 or v2 mode
+  - Supports [contracts]!
 
 ## Getting Started
 
-To get a local copy up and running follow these simple steps.
+This module is distributed via [npm][npm] which is bundled with [node][node] and
+should be installed as one of your project's `devDependencies`:
 
-### Prerequisites
+```
+npm install @wayfair/node-froid
+```
 
-This is an example of how to list things you need to use the software and how to
-install them.
+or
 
-- npm
+for installation via [yarn][yarn]
 
-  ```sh
-  npm install npm@latest -g
-  ```
+```
+yarn add @wayfair/node-froid
+```
 
-### Installation
-
-1. Clone the repo
-
-   ```sh
-   git clone https://github.com/wayfair-incubator/node-froid.git
-   ```
-
-2. Install NPM packages
-
-   ```sh
-   npm install
-   ```
+This library has `peerDependencies` listings for `graphql` and `graphql-relay`.
 
 ## Library API
 
@@ -44,7 +52,7 @@ install them.
 
 | Parameter Name      | Required | Description                                               | Type                                  | Default                                |
 | ------------------- | -------- | --------------------------------------------------------- | ------------------------------------- | -------------------------------------- |
-| `request`           | Yes      | The request object passed to the relay subgraph           | see specific properties               |                                        |
+| `request`           | Yes      | The request object passed to the froid subgraph           | see specific properties               |                                        |
 | `request.query`     | Yes      | The query string for the request                          | `string`                              |                                        |
 | `request.variables` | Yes      | The variables for the request                             | `Record<string, unknown>`             |                                        |
 | `encode`            |          | A callback for encoding the object identify key values    | `(string) => string`                  | `(value) => value`                     |
@@ -55,25 +63,191 @@ containing a relay-spec compliant `id` value.
 
 ### `generateFroidSchema`
 
-| Parameter Name             | Required | Description                                                                                           | Type                    | Default                |
-| -------------------------- | -------- | ----------------------------------------------------------------------------------------------------- | ----------------------- | ---------------------- |
-| `subgraphSchemaMap`        | Yes      | A mapping of subgraph names --> subgraph SDLs used to generate the relay object identification schema | `Map<string, string>`   |                        |
-| `froidSubgraphName`        | Yes      | The name of the relay subgraph service                                                                | `string`                |                        |
-| `options`                  |          | Optional configuration for schema generation                                                          | see specific properties | `{}`                   |
-| `options.contractTags`     |          | A list of supported contract tags                                                                     | `string[]`              | `[]`                   |
-| `options.federatedVersion` |          | The version of federation to generate schema for                                                      | `FederationVersion`     | `FederationVersion.V2` |
-| `options.typeExceptions`   |          | Types to exclude from `id` field generation                                                           | `string[]`              | `[]`                   |
+| Parameter Name             | Required | Description                                                                     | Type                    | Default                |
+| -------------------------- | -------- | ------------------------------------------------------------------------------- | ----------------------- | ---------------------- |
+| `subgraphSchemaMap`        | Yes      | A mapping of subgraph names --> subgraph SDLs used to generate the froid schema | `Map<string, string>`   |                        |
+| `froidSubgraphName`        | Yes      | The name of the relay subgraph service                                          | `string`                |                        |
+| `options`                  |          | Optional configuration for schema generation                                    | see specific properties | `{}`                   |
+| `options.contractTags`     |          | A list of supported [contract][contracts] tags                                  | `string[]`              | `[]`                   |
+| `options.federatedVersion` |          | The version of federation to generate schema for                                | `FederationVersion`     | `FederationVersion.V2` |
+| `options.typeExceptions`   |          | Types to exclude from `id` field generation                                     | `string[]`              | `[]`                   |
 
-Returns `DocumentNode[]`: The Relay Object Identification schema
+Returns `DocumentNode[]`: The froid schema
 
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional
-screenshots, code examples and demos work well in this space. You may also link
-to more resources.
+### `id` Processing
 
-_For more examples, please refer to the [Documentation](https://example.com) or
-the [Wiki](https://github.com/wayfair-incubator/node-froid/wiki)_
+#### Custom GraphQL Gateway Datasource
+
+```ts
+import {GraphQLDataSourceProcessOptions} from '@apollo/gateway';
+import {GraphQLResponse} from 'apollo-server-types';
+import {handleFroidRequest} from '@wayfair/node-froid';
+import {Context} from './path/to/your/ContextType';
+
+class FroidDataSource {
+  process({
+    request,
+  }: Pick<
+    GraphQLDataSourceProcessOptions<Context>,
+    'request'
+  >): Promise<GraphQLResponse> {
+    return await handleFroidRequest(request);
+  }
+}
+```
+
+#### Custom GraphQL Gateway Datasource w/Encryption
+
+```ts
+// Datasource Implementation
+import {GraphQLDataSourceProcessOptions} from '@apollo/gateway';
+import {GraphQLResponse} from 'apollo-server-types';
+import {
+  DecodeCallback,
+  EncodeCallback,
+  handleFroidRequest,
+} from '@wayfair/node-froid';
+// You only really need this if you are using context
+import {Context} from './path/to/your/ContextType';
+// Used to determine which encoder to use
+import {FeatureToggleManager} from './path/to/your/FeatureToggleManager';
+
+// Interface we need to match properly encode key values
+interface Encoder {
+  encode: EncodeCallback;
+  decode: DecodeCallback;
+}
+
+class FroidLDataSource {
+  private encoder1: Encoder;
+  private encoder2: Encoder;
+
+  // Take two encoders to support live key rotation
+  constructor(encoder1: Encoder, encoder2, Encoder) {
+    this.encoder1 = encoder1;
+    this.encoder2 = encoder2;
+  }
+
+  process({
+    request,
+  }: Pick<
+    GraphQLDataSourceProcessOptions<Context>,
+    'request'
+  >): Promise<GraphQLResponse> {
+    const encoder = FeatureToggleManager.useEncoder1()
+      ? this.encoder1
+      : this.encoder2;
+
+    return await handleFroidRequest(request, encoder.encode, encoder.decode);
+  }
+}
+
+// Sample Encoder
+import crypto from 'crypto';
+import {DecodeCallback, EncodeCallback} from '@wayfair/node-froid';
+
+const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
+
+// Interface we need to match properly encode key values
+interface Encoder {
+  encode: EncodeCallback;
+  decode: DecodeCallback;
+}
+
+type CreateEncoderArguments = {
+  base64InitializationVector: string;
+  base64EncryptionKey: string;
+};
+
+export class CustomEncoder implements Encoder {
+  private iv: Buffer;
+  private key: Buffer;
+
+  constructor({
+    base64InitializationVector,
+    base64EncryptionKey,
+  }: CreateEncoderArguments) {
+    this.iv = Buffer.from(base64InitializationVector, 'base64');
+    this.key = Buffer.from(base64EncryptionKey, 'base64');
+  }
+
+  public encode(value: string): string {
+    const cipher = crypto.createCipheriv(
+      ENCRYPTION_ALGORITHM,
+      this.key,
+      this.iv
+    );
+    const encryptedValue = cipher.update(value);
+    const encryptedBuffer = Buffer.concat([encryptedValue, cipher.final()]);
+
+    return encryptedBuffer.toString('base64');
+  }
+
+  public decode(value: string): object {
+    const decipher = crypto.createDecipheriv(
+      ENCRYPTION_ALGORITHM,
+      this.key,
+      this.iv
+    );
+    const decryptedValue = decipher.update(Buffer.from(value, 'base64'));
+    const decryptedBuffer = Buffer.concat([decryptedValue, decipher.final()]);
+
+    const text = decryptedBuffer.toString();
+
+    return JSON.parse(text);
+  }
+}
+```
+
+#### Subgraph w/Express Server
+
+```ts
+import express from 'express';
+import bodyParser from 'body-parser';
+import {handleFroidRequest} from '@wayfair/node-froid';
+
+const port = process.env.PORT || 5000;
+
+const app = express();
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json());
+
+// No need to run a full GraphQL server.
+// Avoid the additional overhead and manage the route directly instead!
+app.post('/graphql', async (req, res) => {
+  const result = await handleFroidRequest(req.body);
+  res.send(result);
+});
+
+app.listen(port, () => {
+  console.log(`Froid subgraph listening on port ${port}`);
+});
+```
+
+### Schema Generation
+
+#### Basic Script
+
+```ts
+import fs from 'fs';
+import {print} from 'graphql';
+import {generateFroidSchema} from '@wayfair/node-froid';
+// You have to provide this. Apollo's public API should provide the ability to extract out subgraph SDL
+import {getFederatedSchemas} from './getFederatedSchemas';
+
+const froidSubgraphName = 'froid-service';
+const variant = 'current';
+
+// Map<string, string> where the key is the subgraph name, and the value is the SDL schema
+const subgraphSchemaMap = getFederatedSchemas(variant);
+
+const schemaAst = generateFroidSchema(subgraphSchemaMap, froidSubgraphName);
+
+// persist results to a file to use with rover publish
+fs.writeFileSync('schema.graphql', print(schemaAst));
+```
 
 ## Roadmap
 
@@ -89,7 +263,8 @@ appreciated**. For detailed contributing guidelines, please see
 
 ## License
 
-Distributed under the `MIT` License. See `LICENSE` for more information.
+Distributed under the `MIT` License. See [`LICENSE`][license] for more
+information.
 
 ## Contact
 
@@ -102,3 +277,13 @@ Project Link:
 
 This template was adapted from
 [https://github.com/othneildrew/Best-README-Template](https://github.com/othneildrew/Best-README-Template).
+
+[npm]: https://www.npmjs.com/
+[yarn]: https://classic.yarnpkg.com
+[node]: https://nodejs.org
+[license]: https://github.com/wayfair-incubator/node-froid/blob/main/LICENSE
+[object identification]:
+  https://relay.dev/docs/guides/graphql-server-specification/#object-identification
+[data source]:
+  https://www.apollographql.com/docs/apollo-server/data/data-sources/
+[contracts]: https://www.apollographql.com/docs/studio/contracts/
