@@ -38,6 +38,21 @@ install them.
    npm install
    ```
 
+## Library API
+
+### `handleFroidRequest`
+
+| Parameter Name      | Required | Description                                               | Type                                  | Default                                |
+| ------------------- | -------- | --------------------------------------------------------- | ------------------------------------- | -------------------------------------- |
+| `request`           | Yes      | The request object passed to the relay subgraph           | see specific properties               |                                        |
+| `request.query`     | Yes      | The query string for the request                          | `string`                              |                                        |
+| `request.variables` | Yes      | The variables for the request                             | `Record<string, unknown>`             |                                        |
+| `encode`            |          | A callback for encoding the object identify key values    | `(string) => string`                  | `(value) => value`                     |
+| `decode`            |          | A callback for decoding an object identifier's key values | `(string) => Record<string, unknown>` | `(keyString) => JSON.parse(keyString)` |
+
+Returns `Promise<object[]>`: A promise representing the list of entity objects
+containing a relay-spec compliant `id` value.
+
 ## Usage
 
 Use this space to show useful examples of how a project can be used. Additional
