@@ -1,9 +1,35 @@
-# Open Source Project Template
-
 [![Release](https://img.shields.io/github/v/release/wayfair-incubator/node-froid?display_name=tag)](CHANGELOG.md)
 [![Lint](https://github.com/wayfair-incubator/node-froid/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/wayfair-incubator/node-froid/actions/workflows/lint.yml)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![Maintainer](https://img.shields.io/badge/Maintainer-Wayfair-7F187F)](https://wayfair.github.io)
+
+## Table of Contents
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [About The Project](#about-the-project)
+  - [The problem](#the-problem)
+  - [The solution](#the-solution)
+- [Getting Started](#getting-started)
+- [Library API](#library-api)
+  - [`handleFroidRequest`](#handlefroidrequest)
+  - [`generateFroidSchema`](#generatefroidschema)
+- [Usage](#usage)
+  - [`id` Processing](#id-processing)
+    - [Custom GraphQL Gateway Datasource](#custom-graphql-gateway-datasource)
+    - [Custom GraphQL Gateway Datasource w/Encryption](#custom-graphql-gateway-datasource-wencryption)
+    - [Custom GraphQL Gateway Datasource w/Cache](#custom-graphql-gateway-datasource-wcache)
+    - [Subgraph w/Express Server](#subgraph-wexpress-server)
+  - [Schema Generation](#schema-generation)
+    - [Basic Script](#basic-script)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+- [Acknowledgements](#acknowledgements)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## About The Project
 
