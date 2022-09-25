@@ -1,6 +1,15 @@
 import {generateEntityObjectsById} from '../generateEntityObjectsById';
 import {testGql as gql} from '../../__tests__/helpers';
 import {toGlobalId} from 'graphql-relay';
+import {parse} from 'graphql';
+
+jest.mock('graphql', () => {
+  const original = jest.requireActual('graphql');
+  return {
+    ...original,
+    parse: jest.fn((value) => original.parse(value)),
+  };
+});
 
 describe('generateEntityObjectsById', () => {
   it('returns an entity object with the `id` + entity keys present', async () => {
@@ -126,7 +135,65 @@ describe('generateEntityObjectsById', () => {
     });
   });
 
-  describe('when interpolated arguemnts are used', () => {
+  it('does not reparse query when a cache is configured', async () => {
+    const authorEntityKey = {firstName: 'John', lastName: 'Doe'};
+    const id = toGlobalId('Author', JSON.stringify(authorEntityKey));
+    const cache = new Map();
+
+    const result1 = await generateEntityObjectsById(
+      {
+        query: gql`
+          query GetAuthor($id: ID!) {
+            node(id: $id) {
+              ... on Author {
+                id
+                firstName
+                lastName
+                fullName
+              }
+            }
+          }
+        `,
+        variables: {id},
+      },
+      {cache}
+    );
+
+    const result2 = await generateEntityObjectsById(
+      {
+        query: gql`
+          query GetAuthor($id: ID!) {
+            node(id: $id) {
+              ... on Author {
+                id
+                firstName
+                lastName
+                fullName
+              }
+            }
+          }
+        `,
+        variables: {id},
+      },
+      {cache}
+    );
+
+    expect(result1).toEqual({
+      data: {
+        node: {
+          __typename: 'Author',
+          id,
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      },
+    });
+    expect(result1).toEqual(result2);
+    expect(cache.size).toEqual(1);
+    expect(parse).toHaveBeenCalledTimes(1);
+  });
+
+  describe('when interpolated arguments are used', () => {
     it('returns an entity object with the `id` + entity keys present', async () => {
       const authorEntityKey = {firstName: 'John', lastName: 'Doe'};
       const id = toGlobalId('Author', JSON.stringify(authorEntityKey));
