@@ -58,6 +58,7 @@ This library has `peerDependencies` listings for `graphql` and `graphql-relay`.
 | `options`           |          | Configuration options available to `handleFroidRequest`   | see specific properties               | `{}`                                   |
 | `options.encode`    |          | A callback for encoding the object identify key values    | `(string) => string`                  | `(value) => value`                     |
 | `options.decode`    |          | A callback for decoding an object identifier's key values | `(string) => Record<string, unknown>` | `(keyString) => JSON.parse(keyString)` |
+| `options.cache`     |          | Cache to use to avoid re-parsing query documents          | `FroidCache`                          |                                        |
 
 Returns `Promise<object[]>`: A promise representing the list of entity objects
 containing a relay-spec compliant `id` value.
@@ -198,6 +199,31 @@ export class CustomEncoder implements Encoder {
     const text = decryptedBuffer.toString();
 
     return JSON.parse(text);
+  }
+}
+```
+
+#### Custom GraphQL Gateway Datasource w/Cache
+
+```ts
+import {GraphQLDataSourceProcessOptions} from '@apollo/gateway';
+import {GraphQLResponse} from 'apollo-server-types';
+import {handleRelayRequest} from '@wayfair/node-froid';
+import {Context} from './path/to/your/ContextType';
+import LRU from 'lru-cache';
+
+const cache = new LRU({max: 500});
+
+class RelayNodeGraphQLDataSource {
+  process({
+    request,
+  }: Pick<
+    GraphQLDataSourceProcessOptions<Context>,
+    'request'
+  >): Promise<GraphQLResponse> {
+    return await handleRelayRequest(request, {
+      cache,
+    });
   }
 }
 ```
