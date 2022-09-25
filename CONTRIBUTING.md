@@ -1,3 +1,16 @@
+# Table of Contents
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [How to Contribute](#how-to-contribute)
+  - [🐛 Reporting Bugs](#-reporting-bugs)
+  - [💡 Feature Requests](#-feature-requests)
+  - [Sending Pull Requests](#sending-pull-requests)
+  - [Other Ways to Contribute](#other-ways-to-contribute)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # How to Contribute
 
 Thanks for your interest in contributing to
@@ -27,7 +40,7 @@ test case.
 **If you discover a security bug, please do not report it through GitHub.
 Instead, please see security procedures in [SECURITY.md](SECURITY.md).**
 
-### 💡 Feature Requests
+## 💡 Feature Requests
 
 Please file an issue to suggest new features. Vote on feature requests by adding
 a 👍. This helps maintainers prioritize what to work on.
