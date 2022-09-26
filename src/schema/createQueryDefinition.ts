@@ -1,5 +1,5 @@
 import {ConstDirectiveNode, Kind, ObjectTypeDefinitionNode} from 'graphql';
-import {ID_FIELD_NAME, ID_FIELD_TYPE, UNION_TYPE_NAME} from './constants';
+import {ID_FIELD_NAME, ID_FIELD_TYPE} from './constants';
 
 /**
  * Generates AST for the following type:
@@ -52,7 +52,7 @@ export function createQueryDefinition(
           kind: Kind.NAMED_TYPE,
           name: {
             kind: Kind.NAME,
-            value: UNION_TYPE_NAME,
+            value: 'Node',
           },
         },
         directives: allTagDirectives,

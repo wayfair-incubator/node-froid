@@ -44,12 +44,10 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-        union RelayNodeEntity = Product
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
         type Query {
-          node(id: ID!): RelayNodeEntity
+          node(id: ID!): Node
         }
 
         interface Node {
@@ -83,12 +81,10 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-        union RelayNodeEntity = Product
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
         type Query {
-          node(id: ID!): RelayNodeEntity
+          node(id: ID!): Node
         }
 
         interface Node {
@@ -125,12 +121,10 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-        union RelayNodeEntity = Product
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
         type Query {
-          node(id: ID!): RelayNodeEntity
+          node(id: ID!): Node
         }
 
         interface Node {
@@ -178,12 +172,10 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-        union RelayNodeEntity = Product
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
         type Query {
-          node(id: ID!): RelayNodeEntity
+          node(id: ID!): Node
         }
 
         interface Node {
@@ -283,12 +275,10 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-        union RelayNodeEntity = User | Todo
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
         type Query {
-          node(id: ID!): RelayNodeEntity
+          node(id: ID!): Node
         }
 
         interface Node {
@@ -335,12 +325,10 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-        union RelayNodeEntity = User
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
         type Query {
-          node(id: ID!): RelayNodeEntity
+          node(id: ID!): Node
         }
 
         interface Node {
@@ -376,12 +364,10 @@ describe('generateFroidSchema for federation v1', () => {
     const relaySchema = gql`
       directive @tag(
         name: String!
-      ) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-      union RelayNodeEntity = User | Todo
+      ) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
       type Query {
-        node(id: ID!): RelayNodeEntity
+        node(id: ID!): Node
       }
 
       interface Node {
@@ -413,12 +399,10 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-        union RelayNodeEntity = User | Todo
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
         type Query {
-          node(id: ID!): RelayNodeEntity
+          node(id: ID!): Node
         }
 
         interface Node {
@@ -463,15 +447,13 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-          union RelayNodeEntity @tag(name: "storefront") @tag(name: "supplier") = Product
+          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
           type Query {
-            node(id: ID!): RelayNodeEntity @tag(name: "storefront") @tag(name: "supplier")
+            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
           }
 
-          interface Node {
+          interface Node @tag(name: "storefront") @tag(name: "supplier") {
             id: ID!
           }
 
@@ -507,15 +489,13 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-          union RelayNodeEntity @tag(name: "storefront") @tag(name: "supplier") = Product
+          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
           type Query {
-            node(id: ID!): RelayNodeEntity @tag(name: "storefront") @tag(name: "supplier")
+            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
           }
 
-          interface Node {
+          interface Node @tag(name: "storefront") @tag(name: "supplier") {
             id: ID!
           }
 
@@ -581,15 +561,13 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
-          union RelayNodeEntity @tag(name: "storefront") @tag(name: "supplier") = Product | Brand | StorefrontUser | InternalUser | Todo
+          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
           type Query {
-            node(id: ID!): RelayNodeEntity @tag(name: "storefront") @tag(name: "supplier")
+            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
           }
 
-          interface Node {
+          interface Node @tag(name: "storefront") @tag(name: "supplier") {
             id: ID!
           }
 

@@ -4,11 +4,9 @@ import {
   DocumentNode,
   FieldDefinitionNode,
   Kind,
-  NameNode,
   ObjectTypeDefinitionNode,
   OperationDefinitionNode,
   StringValueNode,
-  UnionTypeDefinitionNode,
   parse,
 } from 'graphql';
 import {
@@ -17,16 +15,12 @@ import {
   KEY_DIRECTIVE,
   TAG_DIRECTIVE,
 } from './constants';
-import {
-  nodeInterface,
-  implementsNodeInterface,
-  externalDirective,
-} from './astDefinitions';
+import {implementsNodeInterface, externalDirective} from './astDefinitions';
 import {isRootType} from './isRootType';
+import {createNodeInterface} from './createNodeInterface';
 import {createTagDirective} from './createTagDirective';
 import {createQueryDefinition} from './createQueryDefinition';
 import {createIdField} from './createIdField';
-import {createRelayUnionDefinition} from './createRelayUnionDefinition';
 import {createLinkSchemaExtension} from './createLinkSchemaExtension';
 import {createFederationV1TagDirectiveDefinition} from './createFederationV1TagDirectiveDefinition';
 import {
@@ -370,17 +364,6 @@ export function generateFroidSchema(
       {}
     );
 
-  // build union type from all entity types
-  const unionTypeAst: UnionTypeDefinitionNode = createRelayUnionDefinition(
-    Object.keys(relayObjectTypes)
-      .map((key) => {
-        const entity = relayObjectTypes[key];
-        return entity.includeInUnion ? entity.node.name : null;
-      })
-      .filter(Boolean) as NameNode[],
-    allTagDirectives
-  );
-
   const tagDefinition =
     federationVersion === FederationVersion.V1
       ? createFederationV1TagDirectiveDefinition()
@@ -391,9 +374,8 @@ export function generateFroidSchema(
     kind: Kind.DOCUMENT,
     definitions: [
       tagDefinition,
-      unionTypeAst,
       createQueryDefinition(allTagDirectives),
-      nodeInterface,
+      createNodeInterface(allTagDirectives),
       ...Object.values(relayObjectTypes).map((objectType) => objectType.node),
     ],
   };

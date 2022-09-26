@@ -1,26 +1,5 @@
-import {
-  ConstDirectiveNode,
-  InterfaceTypeDefinitionNode,
-  Kind,
-  NamedTypeNode,
-} from 'graphql';
+import {ConstDirectiveNode, Kind, NamedTypeNode} from 'graphql';
 import {EXTERNAL_DIRECTIVE} from './constants';
-import {createIdField} from './createIdField';
-
-/**
- * Represents AST for Node type
- * interface Node {
- *   id: ID!
- * }
- */
-export const nodeInterface: InterfaceTypeDefinitionNode = {
-  kind: Kind.INTERFACE_TYPE_DEFINITION,
-  name: {
-    kind: Kind.NAME,
-    value: 'Node',
-  },
-  fields: [createIdField()],
-};
 
 /**
  * Represents AST for `implements Node`
