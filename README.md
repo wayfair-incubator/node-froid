@@ -1,3 +1,5 @@
+# `node-froid`: NodeJS - Federated Relay Object Identification
+
 [![Release](https://img.shields.io/github/v/release/wayfair-incubator/node-froid?display_name=tag)](CHANGELOG.md)
 [![Lint](https://github.com/wayfair-incubator/node-froid/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/wayfair-incubator/node-froid/actions/workflows/validate.yml)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
