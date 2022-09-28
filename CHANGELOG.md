@@ -10,3 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [0.1.0] - 2022-09-28
+
+### Added
+
+- Add initial library API:
+  - `handleFroidRequest`: Handles both `id` generation as well as `node` field
+    parsing of Object Identification requests in Federation.
+  - `generateFroidSchema`: Generates schema for the Froid subgraph, complete
+    with Federation 1 & 2 support, as well as Apollo contracts!
