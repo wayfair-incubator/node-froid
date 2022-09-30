@@ -150,7 +150,7 @@ describe('generateFroidSchema for federation v1', () => {
         upc: String!
         sku: String!
         name: String
-        brand: Brand
+        brand: [Brand!]!
         price: Int
         weight: Int
       }
@@ -186,7 +186,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
           upc: String! @external
           sku: String! @external
-          brand: Brand @external
+          brand: [Brand!]! @external
         }
 
         extend type Brand {

@@ -20,6 +20,7 @@ import {isRootType} from './isRootType';
 import {createNodeInterface} from './createNodeInterface';
 import {createTagDirective} from './createTagDirective';
 import {createQueryDefinition} from './createQueryDefinition';
+import {extractFieldType} from './extractFieldType';
 import {createIdField} from './createIdField';
 import {createLinkSchemaExtension} from './createLinkSchemaExtension';
 import {createFederationV1TagDirectiveDefinition} from './createFederationV1TagDirectiveDefinition';
@@ -213,7 +214,7 @@ function generateComplexKeyObjectTypes(
     if (keyMapping[key]) {
       const currentField = fields.find((field) => field.name.value === key);
       const currentNode = definitionNodes.find(
-        (node) => node.name.value === currentField.type.name.value
+        (node) => node.name.value === extractFieldType(currentField)
       );
 
       if (!currentNode) {
