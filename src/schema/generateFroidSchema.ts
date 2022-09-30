@@ -23,12 +23,7 @@ import {createQueryDefinition} from './createQueryDefinition';
 import {createIdField} from './createIdField';
 import {createLinkSchemaExtension} from './createLinkSchemaExtension';
 import {createFederationV1TagDirectiveDefinition} from './createFederationV1TagDirectiveDefinition';
-import {
-  ObjectTypeNode,
-  KeyMappingRecord,
-  ValidKeyDirective,
-  RelayObjectType,
-} from './types';
+import {ObjectTypeNode, KeyMappingRecord, ValidKeyDirective} from './types';
 
 /**
  * Returns all non-root types and extended types
@@ -202,17 +197,17 @@ function getKeyFields(
  *
  * @param {ObjectTypeDefinitionNode[]} definitionNodes - All definition nodes in the schema
  * @param {FederationVersion} federationVersion - The version of federation to generate schema for
- * @param {Record<string, RelayObjectType>} objectTypes - Something here
+ * @param {Record<string, ObjectTypeNode>} objectTypes - Something here
  * @param {FieldDefinitionNode[]} fields - The fields
  * @param {KeyMappingRecord} keyMapping - The list of key fields for the node
  * @returns {FieldDefinitionNode[]} A list field definitions
  */
 function generateComplexKeyObjectTypes(
-  definitionNodes,
-  federationVersion,
-  objectTypes,
-  fields,
-  keyMapping
+  definitionNodes: ObjectTypeDefinitionNode[],
+  federationVersion: FederationVersion,
+  objectTypes: Record<string, ObjectTypeNode>,
+  fields: FieldDefinitionNode[],
+  keyMapping: KeyMappingRecord
 ) {
   return Object.keys(keyMapping).flatMap((key) => {
     if (keyMapping[key]) {
@@ -227,20 +222,17 @@ function generateComplexKeyObjectTypes(
 
       const subKeyFields = getKeyFields(
         currentNode,
-        keyMapping[key],
+        keyMapping[key] || {},
         federationVersion
       );
 
       objectTypes[currentNode.name.value] = {
-        includeInUnion: false,
-        node: {
-          kind:
-            federationVersion === FederationVersion.V1
-              ? Kind.OBJECT_TYPE_EXTENSION
-              : Kind.OBJECT_TYPE_DEFINITION,
-          name: currentNode.name,
-          fields: subKeyFields,
-        },
+        kind:
+          federationVersion === FederationVersion.V1
+            ? Kind.OBJECT_TYPE_EXTENSION
+            : Kind.OBJECT_TYPE_DEFINITION,
+        name: currentNode.name,
+        fields: subKeyFields,
       };
 
       generateComplexKeyObjectTypes(
@@ -248,7 +240,7 @@ function generateComplexKeyObjectTypes(
         federationVersion,
         objectTypes,
         subKeyFields,
-        keyMapping[key]
+        keyMapping[key] || {}
       );
     }
   });
@@ -304,10 +296,10 @@ export function generateFroidSchema(
   const definitionNodes = getObjectDefinitions(extenstionAndDefinitionNodes);
 
   // generate list of object types we need to generate the relay schema
-  const relayObjectTypes: Record<string, RelayObjectType> =
+  const relayObjectTypes: Record<string, ObjectTypeNode> =
     definitionNodes.reduce(
       (
-        objectTypes: Record<string, RelayObjectType>,
+        objectTypes: Record<string, ObjectTypeNode>,
         node: ObjectTypeDefinitionNode
       ) => {
         const isException = typeExceptions.some(
@@ -338,17 +330,14 @@ export function generateFroidSchema(
         );
 
         objectTypes[node.name.value] = {
-          includeInUnion: true,
-          node: {
-            kind:
-              federationVersion === FederationVersion.V1
-                ? Kind.OBJECT_TYPE_EXTENSION
-                : Kind.OBJECT_TYPE_DEFINITION,
-            name: node.name,
-            interfaces: [implementsNodeInterface],
-            directives: [keyDirective],
-            fields: [createIdField(idTagDirectives), ...keyFields],
-          },
+          kind:
+            federationVersion === FederationVersion.V1
+              ? Kind.OBJECT_TYPE_EXTENSION
+              : Kind.OBJECT_TYPE_DEFINITION,
+          name: node.name,
+          interfaces: [implementsNodeInterface],
+          directives: [keyDirective],
+          fields: [createIdField(idTagDirectives), ...keyFields],
         };
 
         generateComplexKeyObjectTypes(
@@ -376,7 +365,7 @@ export function generateFroidSchema(
       tagDefinition,
       createQueryDefinition(allTagDirectives),
       createNodeInterface(allTagDirectives),
-      ...Object.values(relayObjectTypes).map((objectType) => objectType.node),
+      ...Object.values(relayObjectTypes),
     ],
   };
 
