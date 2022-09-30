@@ -7,7 +7,7 @@ import {createIdField} from './createIdField';
  *   id: ID!
  * }
  *
- * @param {ConstDirectiveNode[]} allTagDirectives = The full list of supported contract tags
+ * @param {ConstDirectiveNode[]} allTagDirectives - The full list of supported contract tags
  * @returns {InterfaceTypeDefinitionNode} The Node interface definition for the Relay Object Identification schema
  */
 export function createNodeInterface(

@@ -422,6 +422,73 @@ describe('generateFroidSchema for federation v2', () => {
     );
   });
 
+  it('generates custom scalar definitions when they are used on a type definition in the schema', () => {
+    const userSchema = gql`
+      scalar UsedCustomScalar1
+      scalar UsedCustomScalar2
+      scalar UnusedCustomScalar
+
+      type Query {
+        user(id: String): User
+      }
+
+      type User @key(fields: "userId customField1 customField2") {
+        userId: String!
+        name: String!
+        customField1: UsedCustomScalar1
+        customField2: [UsedCustomScalar2!]!
+        unusedField: UnusedCustomScalar
+      }
+    `;
+    const todoSchema = gql`
+      scalar UsedCustomScalar1
+
+      type Todo @key(fields: "todoId customField") {
+        todoId: Int!
+        text: String!
+        complete: Boolean!
+        customField: UsedCustomScalar1
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('user-subgraph', userSchema);
+    subgraphs.set('todo-subgraph', todoSchema);
+
+    const actual = generateSchema(subgraphs, 'relay-subgraph');
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        scalar UsedCustomScalar1
+
+        scalar UsedCustomScalar2
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        type User implements Node @key(fields: "userId customField1 customField2") {
+          id: ID!
+          userId: String!
+          customField1: UsedCustomScalar1
+          customField2: [UsedCustomScalar2!]!
+        }
+
+        type Todo implements Node @key(fields: "todoId customField") {
+          id: ID!
+          todoId: Int!
+          customField: UsedCustomScalar1
+        }
+      `
+    );
+  });
+
   describe('when using contacts with @tag', () => {
     it('propogates valid tags to all core relay object identification types', () => {
       const productSchema = gql`
@@ -596,6 +663,76 @@ describe('generateFroidSchema for federation v2', () => {
             todoId: Int!
           }
         `
+      );
+    });
+
+    it('generates custom scalar definitions w/global tags when they are used on a type definition in the schema', () => {
+      const userSchema = gql`
+        scalar UsedCustomScalar1
+        scalar UsedCustomScalar2
+        scalar UnusedCustomScalar
+
+        type Query {
+          user(id: String): User
+        }
+
+        type User @key(fields: "userId customField1 customField2") {
+          userId: String!
+          name: String!
+          customField1: UsedCustomScalar1
+          customField2: [UsedCustomScalar2!]!
+          unusedField: UnusedCustomScalar
+        }
+      `;
+      const todoSchema = gql`
+        scalar UsedCustomScalar1
+
+        type Todo @key(fields: "todoId customField") {
+          todoId: Int!
+          text: String!
+          complete: Boolean!
+          customField: UsedCustomScalar1
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('user-subgraph', userSchema);
+      subgraphs.set('todo-subgraph', todoSchema);
+
+      const actual = generateSchema(subgraphs, 'relay-subgraph', [
+        'storefront',
+        'internal',
+      ]);
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        scalar UsedCustomScalar1 @tag(name: "internal") @tag(name: "storefront")
+
+        scalar UsedCustomScalar2 @tag(name: "internal") @tag(name: "storefront")
+
+        type Query {
+          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          id: ID!
+        }
+
+        type User implements Node @key(fields: "userId customField1 customField2") {
+          id: ID!
+          userId: String!
+          customField1: UsedCustomScalar1
+          customField2: [UsedCustomScalar2!]!
+        }
+
+        type Todo implements Node @key(fields: "todoId customField") {
+          id: ID!
+          todoId: Int!
+          customField: UsedCustomScalar1
+        }
+      `
       );
     });
   });
