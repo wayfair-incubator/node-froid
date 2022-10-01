@@ -10,14 +10,14 @@ and this project adheres to
 
 ### TBA
 
-## [0.1.1] - 2022-10-01
+## [v0.1.1] - 2022-10-01
 
 ### Added
 
 - Properly export typescript types in published package
 - Include `dist` directory in published package
 
-## [0.1.0] - 2022-09-28
+## [v0.1.0] - 2022-09-28
 
 ### Added
 
