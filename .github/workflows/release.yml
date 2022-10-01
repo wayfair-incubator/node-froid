@@ -16,6 +16,7 @@ jobs:
       - run: yarn lint
       - run: yarn prettier
       - run: yarn test
+      - run: yarn build
 
       - id: "publish"
         uses: JS-DevTools/npm-publish@v1
