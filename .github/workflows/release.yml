@@ -1,0 +1,28 @@
+name: "publish to NPM"
+on:
+  push:
+    tags: ["*"]
+
+jobs:
+  publish:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.tool-versions'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn prettier
+      - run: yarn test
+
+      - id: "publish"
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          access: "public"
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+
+      - if: steps.publish.outputs.type != 'none'
+        run: |
+          echo "Published new version: ${{ steps.publish.outputs.old-version }} => ${{ steps.publish.outputs.version }}"
