@@ -3,6 +3,7 @@
 [![Release](https://img.shields.io/github/v/release/wayfair-incubator/node-froid?display_name=tag)](CHANGELOG.md)
 [![Lint](https://github.com/wayfair-incubator/node-froid/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/wayfair-incubator/node-froid/actions/workflows/validate.yml)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![license: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Maintainer](https://img.shields.io/badge/Maintainer-Wayfair-7F187F)](https://wayfair.github.io)
 
 ## Table of Contents
