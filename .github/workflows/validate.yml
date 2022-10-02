@@ -38,6 +38,16 @@ jobs:
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
       - run: yarn test
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.tool-versions'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
   renovate:
     runs-on: ubuntu-latest
     steps:
