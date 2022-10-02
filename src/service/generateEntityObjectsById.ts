@@ -63,7 +63,7 @@ export function generateEntityObjectsById(
   {query, variables}: GenerateEntityObjectsByIdArguments,
   options?: GenerateEntityObjectsByIdOptions
 ): Promise<NodeResponse> {
-  const decode = options?.decode || ((keyString) => JSON.parse(keyString));
+  const decode = options?.decode || ((keyString) => keyString);
 
   // Parse the query document so that we can visit each node
   // Cache it to avoid future future parsing overhead
@@ -87,13 +87,14 @@ export function generateEntityObjectsById(
         if (!id) throw new GraphQLError('Unable to parse id from operation');
 
         // Unwrap the relay identifier
-        const {type: __typename, id: idObject} = fromGlobalId(id);
+        const {type: __typename, id: encodedId} = fromGlobalId(id);
 
         // Create the object we want to return in our response
         let relayNode = {__typename, id};
 
         // Get the keys object based on the current decoding algorithm
-        const keys = decode(idObject);
+        const idJsonString = decode(encodedId);
+        const keys = JSON.parse(idJsonString);
 
         // Update the node to include all of the key values for the node
         // in order to ensure we are returning a federatable object that the
@@ -126,4 +127,5 @@ export function generateEntityObjectsById(
  *
  * @callback decoderCallback
  * @param {string} Keys that need to be decoded
+ * @returns {string} The decoded string
  */

@@ -100,8 +100,7 @@ describe('generateEntityObjectsById', () => {
       'abc' + JSON.stringify(authorEntityKey) + 'abc'
     );
     const decode = (value) => {
-      const decodedValue = value.replace(/^abc|abc$/g, '');
-      return JSON.parse(decodedValue);
+      return value.replace(/^abc|abc$/g, '');
     };
 
     const result = await generateEntityObjectsById(

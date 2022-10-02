@@ -36,4 +36,4 @@ export type FroidCache = {
 };
 
 export type EncodeCallback = (string) => string;
-export type DecodeCallback = (string) => Record<string, any>;
+export type DecodeCallback = (string) => string;

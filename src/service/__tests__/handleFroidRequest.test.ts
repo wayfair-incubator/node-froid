@@ -118,8 +118,7 @@ describe('handleFroidRequest', () => {
         id: 'QXV0aG9yOmFiY3siZmlyc3ROYW1lIjoiSm9obiIsImxhc3ROYW1lIjoiRG9lIn1hYmM=',
       };
       const decode = (value) => {
-        const decodedValue = value.replace(/^abc|abc$/g, '');
-        return JSON.parse(decodedValue);
+        return value.replace(/^abc|abc$/g, '');
       };
 
       const result = await handleFroidRequest(

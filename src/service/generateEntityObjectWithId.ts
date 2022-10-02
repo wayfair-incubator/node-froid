@@ -60,4 +60,5 @@ export function generateEntityObjectWithId(
  *
  * @callback encoderCallback
  * @param {string} Keys that need to be encoded
+ * @returns {string} The encoded string
  */

@@ -10,6 +10,14 @@ and this project adheres to
 
 ### TBA
 
+## [v0.2.0] - 2022-10-02
+
+### Breaking
+
+- Updated `handleFroidRequest.options.decode` API from `string -> object` to
+  `string -> string` to remove inconsistency across the encode/decode APIs. Now
+  all JSON parsing happens in the core implementation.
+
 ## [v0.1.1] - 2022-10-01
 
 ### Added
