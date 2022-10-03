@@ -30,9 +30,9 @@ function findIdValue(field, variables): string | null {
       return value.value;
     default:
       // It should be impossible to hit these cases becuase the graph
-      // is strongly typed. Throw an error if we ever do.
+      // is strongly typed.
       throw new Error(
-        `'${idArg.value.kind}' is not supported by the node field!`
+        `'${idArg.value.kind}' is not supported by the node field`
       );
   }
 }
@@ -70,50 +70,74 @@ export function generateEntityObjectsById(
   let parsedQuery = options?.cache?.get(query);
 
   if (!parsedQuery) {
-    parsedQuery = parse(query);
+    try {
+      parsedQuery = parse(query);
+    } catch (error) {
+      const message =
+        // @ts-ignore we protect against message property not existing and provide a fallback instead
+        (typeof error === 'object' && error?.message) || 'Error parsing schema';
+
+      return Promise.resolve({
+        data: null,
+        errors: [{message, query}],
+      });
+    }
     options?.cache?.set(query, parsedQuery);
   }
 
   // Used to build up an in-memory response for the incoming request
-  const response = {data: {}};
+  const response: GraphQLResponse = {data: {}};
 
   visit(parsedQuery, {
     Field(node) {
       // If we are currently processing the `node` field node
       if (node.name.value == NODE) {
-        const id = findIdValue(node, variables);
-
-        // Throw an error if we didn't get a non-empty string value for the id
-        if (!id) throw new GraphQLError('Unable to parse id from operation');
-
-        // Unwrap the relay identifier
-        const {type: __typename, id: encodedId} = fromGlobalId(id);
-
-        // Create the object we want to return in our response
-        let relayNode = {__typename, id};
-
-        // Get the keys object based on the current decoding algorithm
-        const idJsonString = decode(encodedId);
-        const keys = JSON.parse(idJsonString);
-
-        // Update the node to include all of the key values for the node
-        // in order to ensure we are returning a federatable object that the
-        // gateway can process successfully.
-        //
-        // If we didn't do this, the @key values that are required wouldn't be
-        // provided to the subgraph service that needs to resolve the request to
-        // provide the rest of the values on for this query type.
-        relayNode = {...relayNode, ...keys};
-
         // We need to track the client-side alias used to ensure we return the
         // correct key in our data response. We use the actual `node` name if
         // there is no alias (cause you get what you ask for ;)!)
         const responseName = node.alias ? node.alias.value : node.name.value;
 
-        // Add the node object to the response
-        //
-        // This allows us to support 'node' queries w/multiple inline fragments
-        response.data[responseName] = relayNode;
+        let id;
+
+        try {
+          id = findIdValue(node, variables);
+
+          // Throw an error if we didn't get a non-empty string value for the id
+          if (!id) throw new GraphQLError('Unable to parse id from operation');
+
+          // Unwrap the relay identifier
+          const {type: __typename, id: encodedId} = fromGlobalId(id);
+
+          // Create the object we want to return in our response
+          let relayNode = {__typename, id};
+
+          // Get the keys object based on the current decoding algorithm
+          const idJsonString = decode(encodedId);
+          const keys = JSON.parse(idJsonString);
+
+          // Update the node to include all of the key values for the node
+          // in order to ensure we are returning a federatable object that the
+          // gateway can process successfully.
+          //
+          // If we didn't do this, the @key values that are required wouldn't be
+          // provided to the subgraph service that needs to resolve the request to
+          // provide the rest of the values on for this query type.
+          relayNode = {...relayNode, ...keys};
+
+          // Add the node object to the response
+          //
+          // This allows us to support 'node' queries w/multiple inline fragments
+          response.data[responseName] = relayNode;
+        } catch (error) {
+          const message =
+            // @ts-ignore we protect against message property not existing and provide a fallback instead
+            (typeof error === 'object' && error?.message) ||
+            'Error generating entity object';
+
+          response.errors ||= [];
+          response.errors.push({message, query, id});
+          response.data[responseName] = null;
+        }
       }
     },
   });

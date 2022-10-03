@@ -15,6 +15,7 @@ export type EntitiesResponseData = {
 
 export type GraphQLResponse = {
   data: any;
+  errors?: object[];
 };
 
 export type GraphQLRequest = {

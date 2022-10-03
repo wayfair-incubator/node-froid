@@ -224,4 +224,66 @@ describe('generateEntityObjectsById', () => {
       });
     });
   });
+
+  describe('failure modes', () => {
+    it("returns an error when the query can't be parsed", async () => {
+      const authorEntityKey = {firstName: 'John', lastName: 'Doe'};
+      const id = toGlobalId('Author', JSON.stringify(authorEntityKey));
+      const query = gql`
+        query invalid schema ($id: ID!) {
+          node(id: $id) {
+            ... on Author {
+              id
+              firstName
+              lastName
+              fullName
+            }
+          }
+        }
+      `;
+      const variables = {id};
+
+      const result = await generateEntityObjectsById({
+        query,
+        variables,
+      });
+
+      expect(result).toEqual({
+        data: null,
+        errors: [
+          {
+            message: 'Syntax Error: Expected "{", found Name "schema".',
+            query,
+          },
+        ],
+      });
+    });
+
+    it('returns a null value for the node when the id is invalid', async () => {
+      const query = gql`
+        query GetAuthorById($id: ID!) {
+          node(id: $id) {
+            ... on Author {
+              id
+              firstName
+              lastName
+              fullName
+            }
+          }
+        }
+      `;
+      const id = 'invalid id';
+      const variables = {id};
+
+      const result = await generateEntityObjectsById({
+        query,
+        variables,
+      });
+
+      expect(result).toEqual({
+        data: {node: null},
+        errors: [{message: 'Unexpected end of JSON input', query, id}],
+      });
+    });
+  });
 });
