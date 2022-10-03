@@ -322,7 +322,7 @@ information.
 
 ## Contact
 
-- [@markjfaga](https://twitter.com/markjfaga)
+- **Mark Faga**: [Twitter](https://twitter.com/markjfaga)
 
 Project Link:
 [https://github.com/wayfair-incubator/node-froid](https://github.com/wayfair-incubator/node-froid)
