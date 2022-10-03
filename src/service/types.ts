@@ -13,14 +13,6 @@ export type EntitiesResponseData = {
   _entities: [EntityObject];
 };
 
-export type EntitiesResponse = {
-  data: any;
-};
-
-export type NodeResponse = {
-  data: any;
-};
-
 export type GraphQLResponse = {
   data: any;
 };

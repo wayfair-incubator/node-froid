@@ -1,5 +1,5 @@
 import {toGlobalId} from 'graphql-relay';
-import {RepresentationObject, EntitiesResponse, EncodeCallback} from './types';
+import {RepresentationObject, GraphQLResponse, EncodeCallback} from './types';
 
 export type GenerateEntityObjectsWithIdOptions = {
   encode?: EncodeCallback;
@@ -21,7 +21,7 @@ export type GenerateEntityObjectWithIdArguments = {
 export function generateEntityObjectWithId(
   {representations}: GenerateEntityObjectWithIdArguments,
   options?: GenerateEntityObjectsWithIdOptions
-): Promise<EntitiesResponse> {
+): Promise<GraphQLResponse> {
   const encode = options?.encode || ((value) => value);
 
   // Need to return a promise to the gateway to simulate an async request

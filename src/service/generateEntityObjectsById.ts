@@ -2,7 +2,7 @@ import {StringValueNode} from 'graphql/language/ast';
 import {Kind} from 'graphql/language/kinds';
 import {GraphQLError, parse, visit} from 'graphql';
 import {fromGlobalId} from 'graphql-relay';
-import {FroidCache, DecodeCallback, NodeResponse} from './types';
+import {FroidCache, DecodeCallback, GraphQLResponse} from './types';
 
 const NODE = 'node';
 
@@ -62,7 +62,7 @@ export type GenerateEntityObjectsByIdArguments = {
 export function generateEntityObjectsById(
   {query, variables}: GenerateEntityObjectsByIdArguments,
   options?: GenerateEntityObjectsByIdOptions
-): Promise<NodeResponse> {
+): Promise<GraphQLResponse> {
   const decode = options?.decode || ((keyString) => keyString);
 
   // Parse the query document so that we can visit each node
