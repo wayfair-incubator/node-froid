@@ -10,6 +10,13 @@ and this project adheres to
 
 ### TBA
 
+## [v1.1.0] - 2022-10-04
+
+### Added
+
+- Public release
+- feat: add better error handling support
+
 ## [v0.2.0] - 2022-10-02
 
 ### Breaking
