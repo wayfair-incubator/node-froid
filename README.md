@@ -58,8 +58,12 @@ cache-miss hydration.
 
 ## Getting Started
 
+To get a local copy up and running follow these simple steps.
+
+### Installation
+
 This module is distributed via [npm][npm] which is bundled with [node][node] and
-should be installed as one of your project's `devDependencies`:
+should be installed as one of your project's direct `dependencies`:
 
 ```
 npm install @wayfair/node-froid
