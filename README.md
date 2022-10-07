@@ -40,7 +40,7 @@
 
 There isn't good support for the Relay's [Object Identification] spec in the
 Federated GraphQL ecosystem. This makes it difficult to support common patterns
-used to refrech objects from your graph to power things like cache TTLs and
+used to refetch objects from your graph to power things like cache TTLs and
 cache-miss hydration.
 
 ### The solution
