@@ -6,6 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "rm -rf dist && ./node_modules/typescript/bin/tsc",
+    "build:post": "node ./scripts/cleanPackageJson.js",
     "docs": "doctoc README.md CONTRIBUTING.md",
     "lint": "eslint '*/**/*.{js,ts}'",
     "lint:errors": "yarn lint --quiet",
@@ -39,6 +40,9 @@
   "bugs": {
     "url": "https://github.com/wayfair-incubator/node-froid/issues"
   },
+  "files": [
+    "dist/**/*"
+  ],
   "homepage": "https://github.com/wayfair-incubator/node-froid#readme",
   "devDependencies": {
     "@babel/core": "^7.19.1",
