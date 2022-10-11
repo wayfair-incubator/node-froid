@@ -2,6 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/wayfair-incubator/node-froid?display_name=tag)](CHANGELOG.md)
 [![Lint](https://github.com/wayfair-incubator/node-froid/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/wayfair-incubator/node-froid/actions/workflows/validate.yml)
+[![codecov](https://codecov.io/gh/wayfair-incubator/node-froid/branch/main/graph/badge.svg)][codecov]
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![license: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Maintainer](https://img.shields.io/badge/Maintainer-Wayfair-7F187F)](https://wayfair.github.io)
@@ -345,3 +346,4 @@ This template was adapted from
 [data source]:
   https://www.apollographql.com/docs/apollo-server/data/data-sources/
 [contracts]: https://www.apollographql.com/docs/studio/contracts/
+[codecov]: https://codecov.io/gh/wayfair-incubator/node-froid
