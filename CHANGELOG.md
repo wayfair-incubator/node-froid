@@ -10,7 +10,13 @@ and this project adheres to
 
 ### TBA
 
-## [v1.1.0] - 2022-10-04
+## [v1.0.1] - 2022-10-10
+
+### Added
+
+- cleanup distributed files when publishing packages
+
+## [v1.0.0] - 2022-10-04
 
 ### Added
 
