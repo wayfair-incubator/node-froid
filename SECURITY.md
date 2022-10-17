@@ -9,10 +9,12 @@ This document outlines security procedures and general policies for the
 
 ## Reporting a Bug
 
-The `NodeJS - Federated Relay Object Identification` team and community take all security bugs in
-`NodeJS - Federated Relay Object Identification` seriously. Thank you for improving the security of
-`NodeJS - Federated Relay Object Identification`. We appreciate your efforts and responsible disclosure and will
-make every effort to acknowledge your contributions.
+The `NodeJS - Federated Relay Object Identification` team and community take all
+security bugs in `NodeJS - Federated Relay Object Identification` seriously.
+Thank you for improving the security of
+`NodeJS - Federated Relay Object Identification`. We appreciate your efforts and
+responsible disclosure and will make every effort to acknowledge your
+contributions.
 
 Report security bugs by emailing `OpenSource@wayfair.com`.
 

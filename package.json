@@ -11,7 +11,7 @@
     "lint": "eslint '*/**/*.{js,ts}'",
     "lint:errors": "yarn lint --quiet",
     "lint:fix": "yarn lint --fix",
-    "prettier": "prettier src/**/* -l",
+    "prettier": "prettier . -l",
     "prettier:fix": "yarn run prettier --write",
     "test": "jest",
     "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest --runInBand",
