@@ -666,26 +666,32 @@ describe('generateFroidSchema for federation v1', () => {
       );
     });
 
-    it('generates custom scalar definitions w/global tags when they are used on a type definition in the schema', () => {
+    it('generates custom return type definitions when they are used on a type definition in the schema', () => {
       const userSchema = gql`
-        scalar UsedCustomScalar1
-        scalar UsedCustomScalar2
+        scalar UsedCustomScalar1 @tag(name: "storefront")
+        scalar UsedCustomScalar2 @tag(name: "internal")
         scalar UnusedCustomScalar
+
+        enum UsedEnum {
+          VALUE_ONE
+          VALUE_TWO @customDirective
+        }
 
         type Query {
           user(id: String): User
         }
 
-        type User @key(fields: "userId customField1 customField2") {
+        type User @key(fields: "userId customField1 customField2 customEnum") {
           userId: String!
           name: String!
           customField1: UsedCustomScalar1
           customField2: [UsedCustomScalar2!]!
+          customEnum: UsedEnum
           unusedField: UnusedCustomScalar
         }
       `;
       const todoSchema = gql`
-        scalar UsedCustomScalar1
+        scalar UsedCustomScalar1 @tag(name: "internal")
 
         type Todo @key(fields: "todoId customField") {
           todoId: Int!
@@ -708,9 +714,14 @@ describe('generateFroidSchema for federation v1', () => {
         gql`
         directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
-        scalar UsedCustomScalar1 @tag(name: "internal") @tag(name: "storefront")
+        scalar UsedCustomScalar1
 
-        scalar UsedCustomScalar2 @tag(name: "internal") @tag(name: "storefront")
+        scalar UsedCustomScalar2
+
+        enum UsedEnum {
+          VALUE_ONE
+          VALUE_TWO
+        }
 
         type Query {
           node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
@@ -720,11 +731,12 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
         }
 
-        extend type User implements Node @key(fields: "userId customField1 customField2") {
+        extend type User implements Node @key(fields: "userId customField1 customField2 customEnum") {
           id: ID!
           userId: String! @external
           customField1: UsedCustomScalar1 @external
           customField2: [UsedCustomScalar2!]! @external
+          customEnum: UsedEnum @external
         }
 
         extend type Todo implements Node @key(fields: "todoId customField") {

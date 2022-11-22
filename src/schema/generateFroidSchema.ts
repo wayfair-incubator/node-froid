@@ -18,7 +18,7 @@ import {
 import {implementsNodeInterface, externalDirective} from './astDefinitions';
 import {isRootType} from './isRootType';
 import {createNodeInterface} from './createNodeInterface';
-import {createCustomScalars} from './createCustomScalars';
+import {createCustomReturnTypes} from './createCustomReturnTypes';
 import {createTagDirective} from './createTagDirective';
 import {createQueryDefinition} from './createQueryDefinition';
 import {extractFieldType} from './extractFieldType';
@@ -365,7 +365,11 @@ export function generateFroidSchema(
     kind: Kind.DOCUMENT,
     definitions: [
       tagDefinition,
-      ...createCustomScalars(Object.values(relayObjectTypes), allTagDirectives),
+      ...createCustomReturnTypes(
+        Object.values(relayObjectTypes),
+        allDefinitionNodes,
+        federationVersion
+      ),
       createQueryDefinition(allTagDirectives),
       createNodeInterface(allTagDirectives),
       ...Object.values(relayObjectTypes),

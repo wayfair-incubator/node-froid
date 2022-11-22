@@ -672,15 +672,26 @@ describe('generateFroidSchema for federation v2', () => {
         scalar UsedCustomScalar2
         scalar UnusedCustomScalar
 
+        enum UsedEnum {
+          VALUE_ONE @customDirective
+          VALUE_TWO @customDirective @inaccessible
+          VALUE_THREE
+        }
+
         type Query {
           user(id: String): User
         }
 
-        type User @key(fields: "userId customField1 customField2") {
+        type User
+          @key(
+            fields: "userId customField1 customField2 customEnum1 customEnum2"
+          ) {
           userId: String!
           name: String!
           customField1: UsedCustomScalar1
           customField2: [UsedCustomScalar2!]!
+          customEnum1: UsedEnum
+          customEnum2: [UsedEnum!]!
           unusedField: UnusedCustomScalar
         }
       `;
@@ -708,9 +719,15 @@ describe('generateFroidSchema for federation v2', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        scalar UsedCustomScalar1 @tag(name: "internal") @tag(name: "storefront")
+        scalar UsedCustomScalar1
 
-        scalar UsedCustomScalar2 @tag(name: "internal") @tag(name: "storefront")
+        scalar UsedCustomScalar2
+
+        enum UsedEnum {
+          VALUE_ONE
+          VALUE_TWO @inaccessible
+          VALUE_THREE
+        }
 
         type Query {
           node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
@@ -720,11 +737,13 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
         }
 
-        type User implements Node @key(fields: "userId customField1 customField2") {
+        type User implements Node @key(fields: "userId customField1 customField2 customEnum1 customEnum2") {
           id: ID!
           userId: String!
           customField1: UsedCustomScalar1
           customField2: [UsedCustomScalar2!]!
+          customEnum1: UsedEnum
+          customEnum2: [UsedEnum!]!
         }
 
         type Todo implements Node @key(fields: "todoId customField") {
