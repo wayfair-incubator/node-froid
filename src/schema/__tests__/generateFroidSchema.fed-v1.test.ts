@@ -673,8 +673,8 @@ describe('generateFroidSchema for federation v1', () => {
         scalar UnusedCustomScalar
 
         enum UsedEnum {
-          USED
-          NOT_USED
+          VALUE_ONE
+          VALUE_TWO @customDirective
         }
 
         type Query {
@@ -719,8 +719,8 @@ describe('generateFroidSchema for federation v1', () => {
         scalar UsedCustomScalar2
 
         enum UsedEnum {
-          USED
-          NOT_USED
+          VALUE_ONE
+          VALUE_TWO
         }
 
         type Query {

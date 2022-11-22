@@ -60,7 +60,7 @@ export function createCustomReturnTypes(
   });
 
   // De-dupe non-native scalar return types. Any definitions of scalars and enums
-  // will work since they can be gauranteed to be consistent across subgraphs
+  // will work since they can be guaranteed to be consistent across subgraphs
   const nonNativeScalarFieldTypes = new Map<
     string,
     SupportedFroidReturnTypes
@@ -79,32 +79,31 @@ export function createCustomReturnTypes(
       if (nonNativeScalarType.kind === Kind.ENUM_TYPE_DEFINITION) {
         let enumValues = nonNativeScalarType.values;
         if (federationVersion === FederationVersion.V2) {
-          enumValues = enumValues?.filter(
-            (value) =>
-              !value.directives?.some(
-                (directive) => directive.name.value === 'inaccessible'
-              )
-          );
+          enumValues = enumValues?.map((enumValue) => ({
+            ...enumValue,
+            directives: enumValue.directives?.filter(
+              (directive) => directive.name.value === 'inaccessible'
+            ),
+          }));
+        } else if (federationVersion === FederationVersion.V1) {
+          enumValues = enumValues?.map((enumValue) => ({
+            ...enumValue,
+            directives: [],
+          }));
         }
-        enumValues = enumValues?.map((enumValue) => ({
-          ...enumValue,
-          directives: [],
-        }));
         nonNativeScalarFieldTypes.set(returnTypeName, {
           ...nonNativeScalarType,
           values: enumValues,
           directives: [],
           description: undefined,
         } as EnumTypeDefinitionNode);
-      }
-      if (nonNativeScalarType.kind === Kind.SCALAR_TYPE_DEFINITION) {
+      } else if (nonNativeScalarType.kind === Kind.SCALAR_TYPE_DEFINITION) {
         nonNativeScalarFieldTypes.set(returnTypeName, {
           ...nonNativeScalarType,
           description: undefined,
           directives: [],
         } as ScalarTypeDefinitionNode);
       }
-      // Enums and Scalars are the only non-native return type supported in @key fields.
     }
   });
 
