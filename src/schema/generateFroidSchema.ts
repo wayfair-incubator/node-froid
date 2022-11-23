@@ -239,7 +239,7 @@ function generateComplexKeyObjectTypes(
       );
 
       if (!objectTypes.hasOwnProperty(fieldType)) {
-        objectTypes[currentNode.name.value] = {
+        objectTypes[fieldType] = {
           kind:
             federationVersion === FederationVersion.V1
               ? Kind.OBJECT_TYPE_EXTENSION
