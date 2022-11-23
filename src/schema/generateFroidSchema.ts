@@ -208,7 +208,7 @@ function getKeyFields(
  *
  * @param {ObjectTypeDefinitionNode[]} definitionNodes - All definition nodes in the schema
  * @param {FederationVersion} federationVersion - The version of federation to generate schema for
- * @param {Record<string, ObjectTypeNode>} objectTypes - Something here
+ * @param {Record<string, ObjectTypeNode>} objectTypes - The generated relay entities
  * @param {FieldDefinitionNode[]} fields - The fields
  * @param {KeyMappingRecord} keyMapping - The list of key fields for the node
  * @returns {FieldDefinitionNode[]} A list field definitions
@@ -223,8 +223,9 @@ function generateComplexKeyObjectTypes(
   return Object.keys(keyMapping).flatMap((key) => {
     if (keyMapping[key]) {
       const currentField = fields.find((field) => field.name.value === key);
+      const fieldType = extractFieldType(currentField);
       const currentNode = definitionNodes.find(
-        (node) => node.name.value === extractFieldType(currentField)
+        (node) => node.name.value === fieldType
       );
 
       if (!currentNode) {
@@ -237,14 +238,16 @@ function generateComplexKeyObjectTypes(
         federationVersion
       );
 
-      objectTypes[currentNode.name.value] = {
-        kind:
-          federationVersion === FederationVersion.V1
-            ? Kind.OBJECT_TYPE_EXTENSION
-            : Kind.OBJECT_TYPE_DEFINITION,
-        name: currentNode.name,
-        fields: subKeyFields,
-      };
+      if (!objectTypes.hasOwnProperty(fieldType)) {
+        objectTypes[currentNode.name.value] = {
+          kind:
+            federationVersion === FederationVersion.V1
+              ? Kind.OBJECT_TYPE_EXTENSION
+              : Kind.OBJECT_TYPE_DEFINITION,
+          name: currentNode.name,
+          fields: subKeyFields,
+        };
+      }
 
       generateComplexKeyObjectTypes(
         definitionNodes,
