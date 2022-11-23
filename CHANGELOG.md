@@ -6,9 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v2.0.0] - 2022-11-22
 
-### TBA
+### Breaking
+
+- @key directive selection in schema generation now picks the first directive
+  where fields doesn't specify a nested complex key.
+
+### Fix
+
+- Fix applied to when entities are specified in a nested complex key field, they
+  were generated as non-entity types in the Froid schema.
+- Fix issue where non-resolvable entity references in Federation 2 were
+  processed during Froid schema generation
+
+## [v1.1.0] - 2022-11-22
+
+### Fix
+
+- Support enum generation specified as @key fields.
+
+## [Unreleased]
 
 ## [v1.0.1] - 2022-10-10
 
