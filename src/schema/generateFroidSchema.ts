@@ -55,8 +55,15 @@ function getObjectDefinitions(
     (node) =>
       node.kind === Kind.OBJECT_TYPE_DEFINITION && // only type definitions
       !node.directives?.some(
-        (directive) => directive.name.value === EXTENDS_DIRECTIVE
-      ) // no @extends directive
+        (directive) =>
+          directive.name.value === EXTENDS_DIRECTIVE || // no @extends directive
+          directive.arguments?.some(
+            (argument) =>
+              argument.name.value === 'resolvable' &&
+              argument.value.kind === Kind.BOOLEAN &&
+              !argument.value.value
+          ) // no entity references, i.e. @key(fields: "...", resolvable: false)
+      )
   ) as ObjectTypeDefinitionNode[];
 }
 
@@ -85,7 +92,9 @@ function selectValidKeyDirective(
     .filter(Boolean)
     .map((strNode) => strNode.value)
     // Protect against people using the `id` field as an entity key
-    .filter((keys) => keys !== ID_FIELD_NAME)[0];
+    .filter((keys) => keys !== ID_FIELD_NAME)
+    .sort((a, b) => a.indexOf('{') - b.indexOf('{'))
+    .find((f) => f);
 
   if (!firstValidKeyDirectiveFields) {
     return;
@@ -199,7 +208,7 @@ function getKeyFields(
  *
  * @param {ObjectTypeDefinitionNode[]} definitionNodes - All definition nodes in the schema
  * @param {FederationVersion} federationVersion - The version of federation to generate schema for
- * @param {Record<string, ObjectTypeNode>} objectTypes - Something here
+ * @param {Record<string, ObjectTypeNode>} objectTypes - The generated relay entities
  * @param {FieldDefinitionNode[]} fields - The fields
  * @param {KeyMappingRecord} keyMapping - The list of key fields for the node
  * @returns {FieldDefinitionNode[]} A list field definitions
@@ -214,8 +223,9 @@ function generateComplexKeyObjectTypes(
   return Object.keys(keyMapping).flatMap((key) => {
     if (keyMapping[key]) {
       const currentField = fields.find((field) => field.name.value === key);
+      const fieldType = extractFieldType(currentField);
       const currentNode = definitionNodes.find(
-        (node) => node.name.value === extractFieldType(currentField)
+        (node) => node.name.value === fieldType
       );
 
       if (!currentNode) {
@@ -228,14 +238,16 @@ function generateComplexKeyObjectTypes(
         federationVersion
       );
 
-      objectTypes[currentNode.name.value] = {
-        kind:
-          federationVersion === FederationVersion.V1
-            ? Kind.OBJECT_TYPE_EXTENSION
-            : Kind.OBJECT_TYPE_DEFINITION,
-        name: currentNode.name,
-        fields: subKeyFields,
-      };
+      if (!objectTypes.hasOwnProperty(fieldType)) {
+        objectTypes[fieldType] = {
+          kind:
+            federationVersion === FederationVersion.V1
+              ? Kind.OBJECT_TYPE_EXTENSION
+              : Kind.OBJECT_TYPE_DEFINITION,
+          name: currentNode.name,
+          fields: subKeyFields,
+        };
+      }
 
       generateComplexKeyObjectTypes(
         definitionNodes,
@@ -293,9 +305,8 @@ export function generateFroidSchema(
     (accumulator, value) => accumulator.concat(value.definitions),
     []
   );
-  const extenstionAndDefinitionNodes =
-    getNonRootObjectTypes(allDefinitionNodes);
-  const definitionNodes = getObjectDefinitions(extenstionAndDefinitionNodes);
+  const extensionAndDefinitionNodes = getNonRootObjectTypes(allDefinitionNodes);
+  const definitionNodes = getObjectDefinitions(extensionAndDefinitionNodes);
 
   // generate list of object types we need to generate the relay schema
   const relayObjectTypes: Record<string, ObjectTypeNode> =
@@ -328,7 +339,7 @@ export function generateFroidSchema(
 
         const idTagDirectives = getTagDirectivesForIdField(
           node,
-          extenstionAndDefinitionNodes
+          extensionAndDefinitionNodes
         );
 
         objectTypes[node.name.value] = {
