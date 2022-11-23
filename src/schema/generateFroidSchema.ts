@@ -55,8 +55,15 @@ function getObjectDefinitions(
     (node) =>
       node.kind === Kind.OBJECT_TYPE_DEFINITION && // only type definitions
       !node.directives?.some(
-        (directive) => directive.name.value === EXTENDS_DIRECTIVE
-      ) // no @extends directive
+        (directive) =>
+          directive.name.value === EXTENDS_DIRECTIVE || // no @extends directive
+          directive.arguments?.some(
+            (argument) =>
+              argument.name.value === 'resolvable' &&
+              argument.value.kind === Kind.BOOLEAN &&
+              !argument.value.value
+          ) // no entity references, i.e. @key(fields: "...", resolvable: false)
+      )
   ) as ObjectTypeDefinitionNode[];
 }
 
@@ -293,9 +300,8 @@ export function generateFroidSchema(
     (accumulator, value) => accumulator.concat(value.definitions),
     []
   );
-  const extenstionAndDefinitionNodes =
-    getNonRootObjectTypes(allDefinitionNodes);
-  const definitionNodes = getObjectDefinitions(extenstionAndDefinitionNodes);
+  const extensionAndDefinitionNodes = getNonRootObjectTypes(allDefinitionNodes);
+  const definitionNodes = getObjectDefinitions(extensionAndDefinitionNodes);
 
   // generate list of object types we need to generate the relay schema
   const relayObjectTypes: Record<string, ObjectTypeNode> =
@@ -328,7 +334,7 @@ export function generateFroidSchema(
 
         const idTagDirectives = getTagDirectivesForIdField(
           node,
-          extenstionAndDefinitionNodes
+          extensionAndDefinitionNodes
         );
 
         objectTypes[node.name.value] = {

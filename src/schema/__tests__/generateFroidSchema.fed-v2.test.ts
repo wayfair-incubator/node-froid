@@ -360,6 +360,10 @@ describe('generateFroidSchema for federation v2', () => {
         text: String!
         complete: Boolean!
       }
+
+      type User @key(fields: "userId", resolvable: false) {
+        userId: String!
+      }
     `;
     const relaySchema = gql`
       directive @tag(
