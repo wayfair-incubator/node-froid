@@ -139,13 +139,70 @@ describe('generateFroidSchema for federation v2', () => {
     );
   });
 
+  it('generates valid schema using the first non-nested complex (multi-field) keys', () => {
+    const productSchema = gql`
+      type Query {
+        topProducts(first: Int = 5): [Product]
+      }
+
+      type Product
+        @key(fields: "upc sku brand { brandId store { storeId } }")
+        @key(fields: "upc sku")
+        @key(fields: "upc")
+        @key(fields: "sku brand { brandId store { storeId } }") {
+        upc: String!
+        sku: String!
+        name: String
+        brand: [Brand!]!
+        price: Int
+        weight: Int
+      }
+
+      type Brand {
+        brandId: Int!
+        store: Store
+      }
+
+      type Store {
+        storeId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema(subgraphs, 'relay-subgraph');
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "upc sku") {
+          id: ID!
+          upc: String!
+          sku: String!
+        }
+      `
+    );
+  });
+
   it('generates valid schema for entity with nested complex (multi-field) keys', () => {
     const productSchema = gql`
       type Query {
         topProducts(first: Int = 5): [Product]
       }
 
-      type Product @key(fields: "upc sku brand { brandId store { storeId } }") {
+      type Product
+        @key(fields: "upc sku brand { brandId store { storeId } }")
+        @key(fields: "upc sku brand { brandId }") {
         upc: String!
         sku: String!
         name: String

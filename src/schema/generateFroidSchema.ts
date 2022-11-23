@@ -92,7 +92,9 @@ function selectValidKeyDirective(
     .filter(Boolean)
     .map((strNode) => strNode.value)
     // Protect against people using the `id` field as an entity key
-    .filter((keys) => keys !== ID_FIELD_NAME)[0];
+    .filter((keys) => keys !== ID_FIELD_NAME)
+    .sort((a, b) => a.indexOf('{') - b.indexOf('{'))
+    .find((f) => f);
 
   if (!firstValidKeyDirectiveFields) {
     return;
