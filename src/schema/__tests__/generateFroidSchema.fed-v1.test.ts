@@ -140,6 +140,61 @@ describe('generateFroidSchema for federation v1', () => {
     );
   });
 
+  it('generates valid schema using the first non-nested complex (multi-field) keys', () => {
+    const productSchema = gql`
+      type Query {
+        topProducts(first: Int = 5): [Product]
+      }
+
+      type Product
+        @key(fields: "upc sku brand { brandId store { storeId } }")
+        @key(fields: "upc sku")
+        @key(fields: "upc")
+        @key(fields: "sku brand { brandId store { storeId } }") {
+        upc: String!
+        sku: String!
+        name: String
+        brand: [Brand!]!
+        price: Int
+        weight: Int
+      }
+
+      type Brand {
+        brandId: Int!
+        store: Store
+      }
+
+      type Store {
+        storeId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema(subgraphs, 'relay-subgraph');
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        extend type Product implements Node @key(fields: "upc sku") {
+          id: ID!
+          upc: String! @external
+          sku: String! @external
+        }
+      `
+    );
+  });
+
   it('generates valid schema for entity with nested complex (multi-field) keys', () => {
     const productSchema = gql`
       type Query {
@@ -293,6 +348,65 @@ describe('generateFroidSchema for federation v1', () => {
         extend type Todo implements Node @key(fields: "todoId") {
           id: ID!
           todoId: Int! @external
+        }
+      `
+    );
+  });
+
+  it('generates the correct entities across multiple subgraph services when external entities are used as complex keys', () => {
+    const productSchema = gql`
+      type Query {
+        topProducts(first: Int = 5): [Product]
+      }
+
+      type Product @key(fields: "upc sku brand { brandId }") {
+        upc: String!
+        sku: String!
+        name: String
+        brand: [Brand!]!
+        price: Int
+        weight: Int
+      }
+
+      type Brand @key(fields: "brandId", resolvable: false) {
+        brandId: Int!
+      }
+    `;
+
+    const brandSchema = gql`
+      type Brand @key(fields: "brandId") {
+        brandId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('brand-subgraph', brandSchema);
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema(subgraphs, 'relay-subgraph');
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        extend type Brand implements Node @key(fields: "brandId") {
+          id: ID!
+          brandId: Int! @external
+        }
+        
+        extend type Product implements Node @key(fields: "upc sku brand { brandId }") {
+          id: ID!
+          upc: String! @external
+          sku: String! @external
+          brand: [Brand!]! @external
         }
       `
     );
