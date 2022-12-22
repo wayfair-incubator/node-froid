@@ -8,7 +8,7 @@ and this project adheres to
 
 ## [v2.0.1] - 2022-11-22
 
-### Breaking
+### Fix
 
 - Sort the key values encoded in an id to ensure they are deterministically
   generated
