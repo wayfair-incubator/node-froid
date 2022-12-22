@@ -50,6 +50,10 @@ describe('generateEntityObjectWithId', () => {
         __typename: 'Sorted',
         c: '3',
         b: '2',
+        d: [
+          {c: '3', a: '1', b: '2'},
+          {a: '1', c: '3', b: '2'},
+        ],
         a: {c: '3', a: '1', b: {b: '2', a: '1', c: '3'}},
       },
     ];
@@ -61,14 +65,14 @@ describe('generateEntityObjectWithId', () => {
         _entities: [
           {
             __typename: 'Sorted',
-            id: 'U29ydGVkOnsiYSI6eyJhIjoiMSIsImIiOnsiYSI6IjEiLCJiIjoiMiIsImMiOiIzIn0sImMiOiIzIn0sImIiOiIyIiwiYyI6IjMifQ==',
+            id: 'U29ydGVkOnsiYSI6eyJhIjoiMSIsImIiOnsiYSI6IjEiLCJiIjoiMiIsImMiOiIzIn0sImMiOiIzIn0sImIiOiIyIiwiYyI6IjMiLCJkIjp7IjAiOnsiYSI6IjEiLCJiIjoiMiIsImMiOiIzIn0sIjEiOnsiYSI6IjEiLCJiIjoiMiIsImMiOiIzIn19fQ==',
           },
         ],
       },
     });
     const id1 = fromGlobalId(result.data._entities[0].id);
     expect(id1).toEqual({
-      id: '{"a":{"a":"1","b":{"a":"1","b":"2","c":"3"},"c":"3"},"b":"2","c":"3"}',
+      id: '{"a":{"a":"1","b":{"a":"1","b":"2","c":"3"},"c":"3"},"b":"2","c":"3","d":{"0":{"a":"1","b":"2","c":"3"},"1":{"a":"1","b":"2","c":"3"}}}',
       type: 'Sorted',
     });
   });
