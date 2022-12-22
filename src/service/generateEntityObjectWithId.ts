@@ -10,6 +10,29 @@ export type GenerateEntityObjectWithIdArguments = {
 };
 
 /**
+ * Recursively sorts the keys of an object
+ *
+ * @param {Record<string, any>} unordered - An object
+ * @returns {Record<string, any>} An object with determinisitcally sorted keys
+ */
+function sortKeys(unordered: Record<string, any>) {
+  const ordered = Object.keys(unordered)
+    .sort()
+    .reduce((obj, key) => {
+      obj[key] = unordered[key];
+
+      // sort child keys if the key value is an object
+      if (typeof obj[key] === 'object') {
+        obj[key] = sortKeys(obj[key]);
+      }
+
+      return obj;
+    }, {});
+
+  return ordered;
+}
+
+/**
  * Generates a Relay-spec complient Entity Object with an `id` field
  *
  * @param {object} object - Container object injected into the generateEntityObjectWithId function
@@ -42,8 +65,11 @@ export function generateEntityObjectWithId(
         // We will be left with only the @key fields for a federated entity
         const {__typename, ...keys} = representation;
 
+        // sort keys to ensure id value is deterministic
+        const sortedKeys = sortKeys(keys);
+
         // Generate a string we can use to generate a relay-spec compliant global identifier
-        const keyValue = JSON.stringify(keys);
+        const keyValue = JSON.stringify(sortedKeys);
 
         // Return the `id` field for the type provided
         return {
