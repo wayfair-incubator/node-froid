@@ -44,6 +44,35 @@ describe('generateEntityObjectWithId', () => {
     });
   });
 
+  it('sorts the keys of the representation to ensure the id value is deterministic', async () => {
+    const representations = [
+      {
+        __typename: 'Sorted',
+        c: '3',
+        b: '2',
+        a: {c: '3', a: '1', b: {b: '2', a: '1', c: '3'}},
+      },
+    ];
+
+    const result = await generateEntityObjectWithId({representations});
+
+    expect(result).toEqual({
+      data: {
+        _entities: [
+          {
+            __typename: 'Sorted',
+            id: 'U29ydGVkOnsiYSI6eyJhIjoiMSIsImIiOnsiYSI6IjEiLCJiIjoiMiIsImMiOiIzIn0sImMiOiIzIn0sImIiOiIyIiwiYyI6IjMifQ==',
+          },
+        ],
+      },
+    });
+    const id1 = fromGlobalId(result.data._entities[0].id);
+    expect(id1).toEqual({
+      id: '{"a":{"a":"1","b":{"a":"1","b":"2","c":"3"},"c":"3"},"b":"2","c":"3"}',
+      type: 'Sorted',
+    });
+  });
+
   it('allows for use of a custom encode', async () => {
     const representations = [
       {__typename: 'Author', firstName: 'John', lastName: 'Doe'},
