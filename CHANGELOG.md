@@ -10,7 +10,8 @@ and this project adheres to
 
 ### Added
 
-- Omit `@interfaceObject`s prior to generating node-relay schema to avoid breaking federation composition
+- Omit `@interfaceObject`s prior to generating node-relay schema to avoid
+  breaking federation composition
 
 ## [v2.0.1] - 2022-11-22
 
