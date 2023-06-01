@@ -26,6 +26,7 @@ import {createIdField} from './createIdField';
 import {createLinkSchemaExtension} from './createLinkSchemaExtension';
 import {createFederationV1TagDirectiveDefinition} from './createFederationV1TagDirectiveDefinition';
 import {ObjectTypeNode, KeyMappingRecord, ValidKeyDirective} from './types';
+import {removeInterfaceObjects} from './removeInterfaceObjects';
 
 /**
  * Returns all non-root types and extended types
@@ -145,17 +146,16 @@ function getTagDirectivesForIdField(
 ): ConstDirectiveNode[] {
   const tagDirectiveNames = objectNodes
     .filter((obj) => obj.name.value === node.name.value)
-    .flatMap((obj) => {
-      const result = obj.fields?.flatMap((field) =>
+    .flatMap((obj) =>
+      obj.fields?.flatMap((field) =>
         field.directives
           ?.filter((directive) => directive.name.value === TAG_DIRECTIVE)
           .map(
             (directive) =>
               (directive?.arguments?.[0].value as StringValueNode).value
           )
-      );
-      return result;
-    })
+      )
+    )
     .filter(Boolean)
     .sort() as string[];
 
@@ -301,10 +301,13 @@ export function generateFroidSchema(
   const subgraphs = [...currentSchemaMap.values()].map((sdl) => parse(sdl));
 
   // extract all definition nodes for federated schema
-  const allDefinitionNodes = subgraphs.reduce<DefinitionNode[]>(
+  let allDefinitionNodes = subgraphs.reduce<DefinitionNode[]>(
     (accumulator, value) => accumulator.concat(value.definitions),
     []
   );
+
+  allDefinitionNodes = removeInterfaceObjects(allDefinitionNodes);
+
   const extensionAndDefinitionNodes = getNonRootObjectTypes(allDefinitionNodes);
   const definitionNodes = getObjectDefinitions(extensionAndDefinitionNodes);
 
@@ -372,7 +375,7 @@ export function generateFroidSchema(
       : createLinkSchemaExtension(['@key', '@tag']);
 
   // build schema
-  const schema: DocumentNode = {
+  return {
     kind: Kind.DOCUMENT,
     definitions: [
       tagDefinition,
@@ -385,7 +388,5 @@ export function generateFroidSchema(
       createNodeInterface(allTagDirectives),
       ...Object.values(relayObjectTypes),
     ],
-  };
-
-  return schema;
+  } as DocumentNode;
 }
