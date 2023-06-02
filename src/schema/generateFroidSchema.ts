@@ -301,14 +301,16 @@ export function generateFroidSchema(
   const subgraphs = [...currentSchemaMap.values()].map((sdl) => parse(sdl));
 
   // extract all definition nodes for federated schema
-  let allDefinitionNodes = subgraphs.reduce<DefinitionNode[]>(
+  const allDefinitionNodes = subgraphs.reduce<DefinitionNode[]>(
     (accumulator, value) => accumulator.concat(value.definitions),
     []
   );
 
-  allDefinitionNodes = removeInterfaceObjects(allDefinitionNodes);
+  const filteredDefinitionNodes = removeInterfaceObjects(allDefinitionNodes);
 
-  const extensionAndDefinitionNodes = getNonRootObjectTypes(allDefinitionNodes);
+  const extensionAndDefinitionNodes = getNonRootObjectTypes(
+    filteredDefinitionNodes
+  );
   const definitionNodes = getObjectDefinitions(extensionAndDefinitionNodes);
 
   // generate list of object types we need to generate the relay schema
@@ -381,7 +383,7 @@ export function generateFroidSchema(
       tagDefinition,
       ...createCustomReturnTypes(
         Object.values(relayObjectTypes),
-        allDefinitionNodes,
+        filteredDefinitionNodes,
         federationVersion
       ),
       createQueryDefinition(allTagDirectives),
