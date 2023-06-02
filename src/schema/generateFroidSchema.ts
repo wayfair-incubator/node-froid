@@ -26,6 +26,7 @@ import {createIdField} from './createIdField';
 import {createLinkSchemaExtension} from './createLinkSchemaExtension';
 import {createFederationV1TagDirectiveDefinition} from './createFederationV1TagDirectiveDefinition';
 import {ObjectTypeNode, KeyMappingRecord, ValidKeyDirective} from './types';
+import {removeInterfaceObjects} from './removeInterfaceObjects';
 
 /**
  * Returns all non-root types and extended types
@@ -145,17 +146,16 @@ function getTagDirectivesForIdField(
 ): ConstDirectiveNode[] {
   const tagDirectiveNames = objectNodes
     .filter((obj) => obj.name.value === node.name.value)
-    .flatMap((obj) => {
-      const result = obj.fields?.flatMap((field) =>
+    .flatMap((obj) =>
+      obj.fields?.flatMap((field) =>
         field.directives
           ?.filter((directive) => directive.name.value === TAG_DIRECTIVE)
           .map(
             (directive) =>
               (directive?.arguments?.[0].value as StringValueNode).value
           )
-      );
-      return result;
-    })
+      )
+    )
     .filter(Boolean)
     .sort() as string[];
 
@@ -305,7 +305,12 @@ export function generateFroidSchema(
     (accumulator, value) => accumulator.concat(value.definitions),
     []
   );
-  const extensionAndDefinitionNodes = getNonRootObjectTypes(allDefinitionNodes);
+
+  const filteredDefinitionNodes = removeInterfaceObjects(allDefinitionNodes);
+
+  const extensionAndDefinitionNodes = getNonRootObjectTypes(
+    filteredDefinitionNodes
+  );
   const definitionNodes = getObjectDefinitions(extensionAndDefinitionNodes);
 
   // generate list of object types we need to generate the relay schema
@@ -372,20 +377,18 @@ export function generateFroidSchema(
       : createLinkSchemaExtension(['@key', '@tag']);
 
   // build schema
-  const schema: DocumentNode = {
+  return {
     kind: Kind.DOCUMENT,
     definitions: [
       tagDefinition,
       ...createCustomReturnTypes(
         Object.values(relayObjectTypes),
-        allDefinitionNodes,
+        filteredDefinitionNodes,
         federationVersion
       ),
       createQueryDefinition(allTagDirectives),
       createNodeInterface(allTagDirectives),
       ...Object.values(relayObjectTypes),
     ],
-  };
-
-  return schema;
+  } as DocumentNode;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@wayfair/node-froid",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Federated GQL Relay Object Identification implementation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
