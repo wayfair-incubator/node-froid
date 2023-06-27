@@ -99,14 +99,15 @@ containing a relay-spec compliant `id` value.
 
 ### `generateFroidSchema`
 
-| Parameter Name             | Required | Description                                                                     | Type                    | Default                |
-| -------------------------- | -------- | ------------------------------------------------------------------------------- | ----------------------- | ---------------------- |
-| `subgraphSchemaMap`        | Yes      | A mapping of subgraph names --> subgraph SDLs used to generate the froid schema | `Map<string, string>`   |                        |
-| `froidSubgraphName`        | Yes      | The name of the relay subgraph service                                          | `string`                |                        |
-| `options`                  |          | Optional configuration for schema generation                                    | see specific properties | `{}`                   |
-| `options.contractTags`     |          | A list of supported [contract][contracts] tags                                  | `string[]`              | `[]`                   |
-| `options.federatedVersion` |          | The version of federation to generate schema for                                | `FederationVersion`     | `FederationVersion.V2` |
-| `options.typeExceptions`   |          | Types to exclude from `id` field generation                                     | `string[]`              | `[]`                   |
+| Parameter Name             | Required | Description                                                                                   | Type                                                                             | Default                |
+| -------------------------- | -------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------- |
+| `subgraphSchemaMap`        | Yes      | A mapping of subgraph names --> subgraph SDLs used to generate the froid schema               | `Map<string, string>`                                                            |                        |
+| `froidSubgraphName`        | Yes      | The name of the relay subgraph service                                                        | `string`                                                                         |                        |
+| `options`                  |          | Optional configuration for schema generation                                                  | see specific properties                                                          | `{}`                   |
+| `options.contractTags`     |          | A list of supported [contract][contracts] tags                                                | `string[]`                                                                       | `[]`                   |
+| `options.federatedVersion` |          | The version of federation to generate schema for                                              | `FederationVersion`                                                              | `FederationVersion.V2` |
+| `options.typeExceptions`   |          | Types to exclude from `id` field generation                                                   | `string[]`                                                                       | `[]`                   |
+| `options.nodeQualifier`    |          | A custom function to qualify whether or not an entity should be included in node-relay schema | `(node: DefinitionNode, objectTypes: Record<string, ObjectTypeNode>) => boolean` |                        |
 
 Returns `DocumentNode[]`: The froid schema
 

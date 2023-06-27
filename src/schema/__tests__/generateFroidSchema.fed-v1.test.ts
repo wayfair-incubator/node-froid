@@ -1,18 +1,24 @@
 import {generateFroidSchema, FederationVersion} from '../generateFroidSchema';
-import {print} from 'graphql';
+import {print, Kind, DefinitionNode} from 'graphql';
 import {stripIndent as gql} from 'common-tags';
+import {ObjectTypeNode} from '../types';
 
 function generateSchema(
   subgraphs: Map<string, string>,
   froidSubgraphName: string,
   contractTags: string[] = [],
-  typeExceptions: string[] = []
+  typeExceptions: string[] = [],
+  nodeQualifier?: (
+    node: DefinitionNode,
+    objectTypes: Record<string, ObjectTypeNode>
+  ) => boolean
 ) {
   return print(
     generateFroidSchema(subgraphs, froidSubgraphName, {
       contractTags,
       federationVersion: FederationVersion.V1,
       typeExceptions,
+      nodeQualifier,
     })
   );
 }
@@ -62,7 +68,7 @@ describe('generateFroidSchema for federation v1', () => {
     );
   });
 
-  it('does not propogate miscelaneous directives to the generated id field', () => {
+  it('does not propagate miscellaneous directives to the generated id field', () => {
     const productSchema = gql`
       type Query {
         topProducts(first: Int = 5): [Product]
@@ -401,7 +407,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
           brandId: Int! @external
         }
-        
+
         extend type Product implements Node @key(fields: "upc sku brand { brandId }") {
           id: ID!
           upc: String! @external
@@ -447,6 +453,70 @@ describe('generateFroidSchema for federation v1', () => {
 
         interface Node {
           id: ID!
+        }
+
+        extend type User implements Node @key(fields: "userId") {
+          id: ID!
+          userId: String! @external
+        }
+      `
+    );
+  });
+
+  it('ignores types based on a custom qualifier function', () => {
+    const userSchema = gql`
+      type Query {
+        user(id: String): User
+      }
+
+      type User @key(fields: "userId") {
+        userId: String!
+        name: String!
+      }
+
+      extend type Todo @key(fields: "oldTodoKey") {
+        oldTodoKey: String! @external
+      }
+    `;
+
+    const todoSchema = gql`
+      type Todo @key(fields: "todoId") @key(fields: "oldTodoKey") {
+        todoId: Int!
+        oldTodoKey: String!
+        text: String!
+        complete: Boolean!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('todo-subgraph', todoSchema);
+    subgraphs.set('user-subgraph', userSchema);
+
+    const nodeQualifier = (node) => node.kind === Kind.OBJECT_TYPE_DEFINITION;
+
+    const actual = generateSchema(
+      subgraphs,
+      'relay-subgraph',
+      [],
+      [],
+      nodeQualifier
+    );
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        extend type Todo implements Node @key(fields: "todoId") {
+          id: ID!
+          todoId: Int! @external
         }
 
         extend type User implements Node @key(fields: "userId") {
