@@ -269,6 +269,10 @@ export type GenerateRelayServiceSchemaOptions = {
   contractTags?: string[];
   federationVersion?: FederationVersion;
   typeExceptions?: string[];
+  nodeQualifier?: (
+    node: DefinitionNode,
+    objectTypes: Record<string, ObjectTypeNode>
+  ) => boolean;
 };
 
 /**
@@ -290,6 +294,7 @@ export function generateFroidSchema(
   // defaults
   const federationVersion = options?.federationVersion ?? FederationVersion.V2;
   const typeExceptions = options?.typeExceptions || [];
+  const nodeQualifier = options?.nodeQualifier || (() => true);
   const allTagDirectives: ConstDirectiveNode[] =
     options?.contractTags?.sort().map((tag) => createTagDirective(tag)) || [];
 
@@ -323,8 +328,9 @@ export function generateFroidSchema(
         const isException = typeExceptions.some(
           (exception) => node.name.value === exception
         );
+        const passesNodeQualifier = Boolean(nodeQualifier(node, objectTypes));
 
-        if (isException) {
+        if (isException || !passesNodeQualifier) {
           return objectTypes;
         }
 
