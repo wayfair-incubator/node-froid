@@ -29,7 +29,7 @@ and this project adheres to
 - In some cases, if a complex key included a nested entity but was not using the
   entity's key, schema generation would fail to include the nested entity's key
   field(s).
-- In some cases, if an type appeared in multiple subgraphs and was being used in
+- In some cases, if a type appeared in multiple subgraphs and was being used in
   multiple complex keys but with different field selections, not all fields
   would be included in the generated schema.
 - When generating Federation v1 schema, value types would erroneously receive
