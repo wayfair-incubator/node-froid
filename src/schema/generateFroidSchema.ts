@@ -266,7 +266,9 @@ function generateComplexKeyObjectTypes(
         currentNodes,
         keyMapping[key] || {},
         federationVersion
-      ).filter((field) =>
+      );
+
+      const deduplicatedSubKeyFields = subKeyFields.filter((field) =>
         existingFields.every(
           (existingField) => existingField.name.value !== field.name.value
         )
@@ -278,7 +280,7 @@ function generateComplexKeyObjectTypes(
             ? Kind.OBJECT_TYPE_EXTENSION
             : Kind.OBJECT_TYPE_DEFINITION,
         name: currentNode.name,
-        fields: [...existingFields, ...subKeyFields],
+        fields: [...existingFields, ...deduplicatedSubKeyFields],
         ...existingDirectives,
         ...existingInterfaces,
       };
