@@ -1,10 +1,11 @@
 import {ConstArgumentNode, Kind, SchemaExtensionNode} from 'graphql';
+import {FED2_DEFAULT_VERSION} from './constants';
 
-export const FED2_OPT_IN_URL = 'https://specs.apollo.dev/federation/v2.0';
+export const FED2_OPT_IN_URL = 'https://specs.apollo.dev/federation/';
 
 export const createLinkSchemaExtension = (
   imports: string[] = ['@key'],
-  url = FED2_OPT_IN_URL
+  version = FED2_DEFAULT_VERSION
 ): SchemaExtensionNode => {
   if (!imports.length) {
     throw new Error('At least one import must be provided.');
@@ -19,7 +20,7 @@ export const createLinkSchemaExtension = (
       },
       value: {
         kind: Kind.STRING,
-        value: url,
+        value: FED2_OPT_IN_URL + version,
       },
     },
     {
