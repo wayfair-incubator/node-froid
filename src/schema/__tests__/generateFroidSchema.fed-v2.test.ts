@@ -3,26 +3,111 @@ import {print, DefinitionNode} from 'graphql';
 import {stripIndent as gql} from 'common-tags';
 import {ObjectTypeNode} from '../types';
 
-function generateSchema(
-  subgraphs: Map<string, string>,
-  froidSubgraphName: string,
-  contractTags: string[] = [],
-  typeExceptions: string[] = [],
+function generateSchema({
+  subgraphs,
+  froidSubgraphName,
+  contractTags = [],
+  typeExceptions = [],
+  federationVersion,
+  nodeQualifier,
+  keySorter,
+}: {
+  subgraphs: Map<string, string>;
+  froidSubgraphName: string;
+  contractTags?: string[];
+  typeExceptions?: string[];
+  federationVersion?: string;
   nodeQualifier?: (
     node: DefinitionNode,
     objectTypes: Record<string, ObjectTypeNode>
-  ) => boolean
-) {
+  ) => boolean;
+  keySorter?: (keys: string[], node: ObjectTypeNode) => string[];
+}) {
   return print(
     generateFroidSchema(subgraphs, froidSubgraphName, {
       contractTags,
       typeExceptions,
       nodeQualifier,
+      federationVersion,
+      keySorter,
     })
   );
 }
 
 describe('generateFroidSchema for federation v2', () => {
+  it('defaults the federation version to 2.0', () => {
+    const productSchema = gql`
+      type Product @key(fields: "upc") {
+        upc: String!
+        name: String
+        price: Int
+        weight: Int
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
+
+    expect(actual).toMatch(
+      'extend schema @link(url: "https://specs.apollo.dev/federation/v2.0"'
+    );
+  });
+
+  it('honors a custom 2.x federation version', () => {
+    const productSchema = gql`
+      type Product @key(fields: "upc") {
+        upc: String!
+        name: String
+        price: Int
+        weight: Int
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      federationVersion: 'v2.3',
+    });
+
+    expect(actual).toMatch(
+      'extend schema @link(url: "https://specs.apollo.dev/federation/v2.3"'
+    );
+  });
+
+  it('throws an error if the version is not a valid v2.x version', () => {
+    const productSchema = gql`
+      type Product @key(fields: "upc") {
+        upc: String!
+        name: String
+        price: Int
+        weight: Int
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    let errorMessage = '';
+    try {
+      generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        federationVersion: 'v3.1',
+      });
+    } catch (err) {
+      errorMessage = err.message;
+    }
+
+    expect(errorMessage).toMatch(
+      `Federation version must be either 'v1' or a valid 'v2.x' version`
+    );
+  });
+
   it('ignores @key(fields: "id") directives', () => {
     const productSchema = gql`
       type Query {
@@ -44,7 +129,10 @@ describe('generateFroidSchema for federation v2', () => {
     const subgraphs = new Map();
     subgraphs.set('product-subgraph', productSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -81,7 +169,10 @@ describe('generateFroidSchema for federation v2', () => {
     const subgraphs = new Map();
     subgraphs.set('product-subgraph', productSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -121,7 +212,10 @@ describe('generateFroidSchema for federation v2', () => {
     const subgraphs = new Map();
     subgraphs.set('product-subgraph', productSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -145,7 +239,7 @@ describe('generateFroidSchema for federation v2', () => {
     );
   });
 
-  it('generates valid schema using the first non-nested complex (multi-field) keys', () => {
+  it('defaults to generating valid schema using the first non-nested complex (multi-field) keys', () => {
     const productSchema = gql`
       type Query {
         topProducts(first: Int = 5): [Product]
@@ -176,7 +270,10 @@ describe('generateFroidSchema for federation v2', () => {
     const subgraphs = new Map();
     subgraphs.set('product-subgraph', productSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -195,6 +292,214 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
           upc: String!
           sku: String!
+        }
+      `
+    );
+  });
+
+  it('uses a custom key sorter to prefer complex keys', () => {
+    const productSchema = gql`
+      type Query {
+        topProducts(first: Int = 5): [Product]
+      }
+
+      type Product
+        @key(fields: "upc sku")
+        @key(fields: "upc sku brand { brandId store { storeId } }")
+        @key(fields: "upc")
+        @key(fields: "sku brand { brandId store { storeId } }") {
+        upc: String!
+        sku: String!
+        name: String
+        brand: [Brand!]!
+        price: Int
+        weight: Int
+      }
+
+      type Brand {
+        brandId: Int!
+        store: Store
+      }
+
+      type Store {
+        storeId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      keySorter: (keys) => {
+        return keys.sort((a, b) => b.indexOf('{') - a.indexOf('{'));
+      },
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
+          id: ID!
+          upc: String!
+          sku: String!
+          brand: [Brand!]!
+        }
+
+        type Brand {
+          brandId: Int!
+          store: Store
+        }
+
+        type Store {
+          storeId: Int!
+        }
+      `
+    );
+  });
+
+  it('uses a custom key sorter to prefer the first ordinal key', () => {
+    const productSchema = gql`
+      type Query {
+        topProducts(first: Int = 5): [Product]
+      }
+
+      type Product
+        @key(fields: "upc")
+        @key(fields: "upc sku brand { brandId store { storeId } }")
+        @key(fields: "upc sku")
+        @key(fields: "sku brand { brandId store { storeId } }") {
+        upc: String!
+        sku: String!
+        name: String
+        brand: [Brand!]!
+        price: Int
+        weight: Int
+      }
+
+      type Brand {
+        brandId: Int!
+        store: Store
+      }
+
+      type Store {
+        storeId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      keySorter: (keys) => keys,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "upc") {
+          id: ID!
+          upc: String!
+        }
+      `
+    );
+  });
+
+  it('uses a custom key sorter to prefer complex keys only when the node is named "Book"', () => {
+    const productSchema = gql`
+      type Query {
+        topProducts(first: Int = 5): [Product]
+      }
+
+      type Product
+        @key(fields: "upc sku")
+        @key(fields: "upc sku brand { brandId }") {
+        upc: String!
+        sku: String!
+        name: String
+        brand: [Brand!]!
+        price: Int
+        weight: Int
+      }
+
+      type Brand {
+        brandId: Int!
+        store: Store
+      }
+
+      type Book
+        @key(fields: "bookId")
+        @key(fields: "bookId author { authorId }") {
+        bookId: String!
+        author: Author!
+      }
+
+      type Author {
+        authorId: String!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      keySorter: (keys, node) => {
+        if (node.name.value === 'Book') {
+          return keys.sort((a, b) => b.indexOf('{') - a.indexOf('{'));
+        }
+        return keys;
+      },
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "upc sku") {
+          id: ID!
+          upc: String!
+          sku: String!
+        }
+
+        type Book implements Node @key(fields: "bookId author { authorId }") {
+          id: ID!
+          bookId: String!
+          author: Author!
+        }
+
+        type Author {
+          authorId: String!
         }
       `
     );
@@ -229,7 +534,10 @@ describe('generateFroidSchema for federation v2', () => {
     const subgraphs = new Map();
     subgraphs.set('product-subgraph', productSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -332,7 +640,10 @@ describe('generateFroidSchema for federation v2', () => {
     subgraphs.set('product-subgraph', productSchema);
     subgraphs.set('todo-subgraph', todoSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -389,7 +700,10 @@ describe('generateFroidSchema for federation v2', () => {
     subgraphs.set('brand-subgraph', brandSchema);
     subgraphs.set('product-subgraph', productSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -442,7 +756,12 @@ describe('generateFroidSchema for federation v2', () => {
     subgraphs.set('user-subgraph', userSchema);
     subgraphs.set('todo-subgraph', todoSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph', [], ['Todo']);
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: [],
+      typeExceptions: ['Todo'],
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -498,13 +817,13 @@ describe('generateFroidSchema for federation v2', () => {
       node.directives.filter((directive) => directive.name.value === 'key')
         .length > 1;
 
-    const actual = generateSchema(
+    const actual = generateSchema({
       subgraphs,
-      'relay-subgraph',
-      [],
-      [],
-      nodeQualifier
-    );
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: [],
+      typeExceptions: [],
+      nodeQualifier,
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -587,7 +906,10 @@ describe('generateFroidSchema for federation v2', () => {
     subgraphs.set('todo-subgraph', todoSchema);
     subgraphs.set('relay-subgraph', relaySchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -647,7 +969,10 @@ describe('generateFroidSchema for federation v2', () => {
     subgraphs.set('user-subgraph', userSchema);
     subgraphs.set('todo-subgraph', todoSchema);
 
-    const actual = generateSchema(subgraphs, 'relay-subgraph');
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
 
     expect(actual).toEqual(
       // prettier-ignore
@@ -699,10 +1024,11 @@ describe('generateFroidSchema for federation v2', () => {
       const subgraphs = new Map();
       subgraphs.set('product-subgraph', productSchema);
 
-      const actual = generateSchema(subgraphs, 'relay-subgraph', [
-        'storefront',
-        'supplier',
-      ]);
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'supplier'],
+      });
 
       expect(actual).toEqual(
         // prettier-ignore
@@ -741,10 +1067,11 @@ describe('generateFroidSchema for federation v2', () => {
       const subgraphs = new Map();
       subgraphs.set('product-subgraph', productSchema);
 
-      const actual = generateSchema(subgraphs, 'relay-subgraph', [
-        'storefront',
-        'supplier',
-      ]);
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'supplier'],
+      });
 
       expect(actual).toEqual(
         // prettier-ignore
@@ -813,10 +1140,11 @@ describe('generateFroidSchema for federation v2', () => {
       subgraphs.set('product-subgraph', productSchema);
       subgraphs.set('todo-subgraph', todoSchema);
 
-      const actual = generateSchema(subgraphs, 'relay-subgraph', [
-        'storefront',
-        'supplier',
-      ]);
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'supplier'],
+      });
 
       expect(actual).toEqual(
         // prettier-ignore
@@ -902,10 +1230,11 @@ describe('generateFroidSchema for federation v2', () => {
       subgraphs.set('user-subgraph', userSchema);
       subgraphs.set('todo-subgraph', todoSchema);
 
-      const actual = generateSchema(subgraphs, 'relay-subgraph', [
-        'storefront',
-        'internal',
-      ]);
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'internal'],
+      });
 
       expect(actual).toEqual(
         // prettier-ignore
@@ -943,6 +1272,113 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
           todoId: Int!
           customField: UsedCustomScalar1
+        }
+      `
+      );
+    });
+  });
+
+  describe('when generating schema for complex keys', () => {
+    it('finds the complete schema cross-subgraph', () => {
+      const magazineSchema = gql`
+        type Magazine
+          @key(fields: "magazineId publisher { address { country } }") {
+          magazineId: String!
+          publisher: Publisher!
+        }
+
+        type Publisher {
+          address: Address!
+        }
+
+        type Address {
+          country: String!
+        }
+      `;
+
+      const bookSchema = gql`
+        type Book
+          @key(fields: "bookId author { fullName address { postalCode } }") {
+          bookId: String!
+          title: String!
+          author: Author!
+        }
+
+        type Author @key(fields: "authorId") {
+          authorId: Int!
+          fullName: String!
+          address: Address!
+        }
+
+        type Address {
+          postalCode: String!
+          country: String!
+        }
+      `;
+
+      const authorSchema = gql`
+        type Author @key(fields: "authorId") {
+          authorId: Int!
+          fullName: String!
+          address: Address!
+        }
+
+        type Address {
+          postalCode: String!
+          country: String!
+        }
+      `;
+
+      const subgraphs = new Map();
+      subgraphs.set('magazine-subgraph', magazineSchema);
+      subgraphs.set('book-subgraph', bookSchema);
+      subgraphs.set('author-subgraph', authorSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'internal'],
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          id: ID!
+        }
+
+        type Magazine implements Node @key(fields: "magazineId publisher { address { country } }") {
+          id: ID!
+          magazineId: String!
+          publisher: Publisher!
+        }
+
+        type Publisher {
+          address: Address!
+        }
+
+        type Address {
+          country: String!
+          postalCode: String!
+        }
+
+        type Book implements Node @key(fields: "bookId author { fullName address { postalCode } }") {
+          id: ID!
+          bookId: String!
+          author: Author!
+        }
+
+        type Author implements Node @key(fields: "authorId") {
+          id: ID!
+          fullName: String!
+          address: Address!
+          authorId: Int!
         }
       `
       );

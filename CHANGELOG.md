@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.0.0] - 2023-08-16
+
+### Breaking
+
+- The federation version is no longer provided as an enum value. It must now be
+  provided as a string of either `v1` or a valid `v2.x` version (examples:
+  `v2.1`, `v2.3`, etc.).
+- Fixes to complex key schema generation and federation v1 value type schema
+  generation could effect the generated schema. Please carefully compare schema
+  generated with the previous version against schema generated after upgrading.
+
+### Added
+
+- Added support for a custom key sorter. This allows for a custom key preference
+  to be applied prior to selecting the first key.
+- Added support for explicitly defining the federation version, either `v1` or a
+  valid `v2.x` version (examples: `v2.1`, `v2.3`, etc.)
+
+### Fix
+
+- In some cases, if a complex key included a nested entity but was not using the
+  entity's key, schema generation would fail to include the nested entity's key
+  field(s).
+- In some cases, if a type appeared in multiple subgraphs and was being used in
+  multiple complex keys but with different field selections, not all fields
+  would be included in the generated schema.
+- When generating Federation v1 schema, value types would erroneously receive
+  the `extend` keyword and their fields would erroneously receive the
+  `@external` directive.
+
 ## [v2.2.0] - 2023-06-27
 
 ### Added

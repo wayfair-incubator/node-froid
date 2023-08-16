@@ -1,3 +1,6 @@
+export const FED1_VERSION = 'v1';
+export const FED2_DEFAULT_VERSION = 'v2.0';
+export const FED2_VERSION_PREFIX = 'v2.';
 export const ID_FIELD_NAME = 'id';
 export const ID_FIELD_TYPE = 'ID';
 export const EXTERNAL_DIRECTIVE = 'external';
