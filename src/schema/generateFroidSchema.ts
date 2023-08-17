@@ -166,10 +166,11 @@ function getTagDirectivesForIdField(
   const tagDirectiveNames = objectNodes
     .filter((obj) => obj.name.value === node.name.value)
     .flatMap((obj) => {
-      const taggableNodes =
-        obj.fields?.flatMap((field) => [field, ...(field?.arguments || [])]) ||
-        [];
-      return taggableNodes.flatMap((field) =>
+      const taggableNodes = obj.fields?.flatMap((field) => [
+        field,
+        ...(field?.arguments || []),
+      ]);
+      return taggableNodes?.flatMap((field) =>
         field.directives
           ?.filter((directive) => directive.name.value === TAG_DIRECTIVE)
           .map(
