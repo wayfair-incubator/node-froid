@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.0.1] - 2023-08-17
+
+### Fix
+
+- Applying the `@tag` directive to an entity's `id` field could fail if the only
+  `@tag` directive in the entity was applied to a field argument. This fix now
+  considers field argument `@tag`s as well as field `@tag`s when selecting the
+  `id` field's `@tag`(s).
+
 ## [v3.0.0] - 2023-08-16
 
 ### Breaking

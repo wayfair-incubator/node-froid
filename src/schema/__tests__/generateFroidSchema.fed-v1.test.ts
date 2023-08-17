@@ -1214,6 +1214,60 @@ describe('generateFroidSchema for federation v1', () => {
       `
       );
     });
+
+    it('tags are identified from field arguments', () => {
+      const urlSchema = gql`
+        type TypeA @key(fields: "selections { selectionId }") {
+          selections: [TypeB!] @inaccessible
+          fieldWithArgument(argument: Int @tag(name: "storefront")): Boolean
+        }
+
+        extend type TypeB @key(fields: "selectionId") {
+          selectionId: String! @external
+        }
+      `;
+
+      const altSchema = gql`
+        type TypeB @key(fields: "selectionId") {
+          selectionId: String! @tag(name: "storefront")
+        }
+      `;
+
+      const subgraphs = new Map();
+      subgraphs.set('url-subgraph', urlSchema);
+      subgraphs.set('alt-subgraph', altSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'internal'],
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+        type Query {
+          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          id: ID!
+        }
+
+        extend type TypeA implements Node @key(fields: "selections { selectionId }") {
+          id: ID! @tag(name: "storefront")
+          selections: [TypeB!] @external
+        }
+
+        extend type TypeB implements Node @key(fields: "selectionId") {
+          id: ID! @tag(name: "storefront")
+          selectionId: String! @external
+        }
+      `
+      );
+    });
   });
 
   describe('when generating schema for complex keys', () => {
