@@ -1276,6 +1276,60 @@ describe('generateFroidSchema for federation v2', () => {
       `
       );
     });
+
+    it('tags are identified from field arguments', () => {
+      const urlSchema = gql`
+        type TypeA @key(fields: "selections { selectionId }") {
+          selections: [TypeB!] @inaccessible
+          fieldWithArgument(argument: Int @tag(name: "storefront")): Boolean
+        }
+
+        type TypeB @key(fields: "selectionId", resolvable: false) {
+          selectionId: String!
+        }
+      `;
+
+      const altSchema = gql`
+        type TypeB @key(fields: "selectionId") {
+          selectionId: String! @tag(name: "storefront")
+        }
+      `;
+
+      const subgraphs = new Map();
+      subgraphs.set('url-subgraph', urlSchema);
+      subgraphs.set('alt-subgraph', altSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'internal'],
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          id: ID!
+        }
+
+        type TypeA implements Node @key(fields: "selections { selectionId }") {
+          id: ID! @tag(name: "storefront")
+          selections: [TypeB!]
+        }
+
+        type TypeB implements Node @key(fields: "selectionId") {
+          id: ID! @tag(name: "storefront")
+          selectionId: String!
+        }
+      `
+      );
+    });
   });
 
   describe('when generating schema for complex keys', () => {
