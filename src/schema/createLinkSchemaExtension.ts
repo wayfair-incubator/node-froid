@@ -1,8 +1,12 @@
 import {ConstArgumentNode, Kind, SchemaExtensionNode} from 'graphql';
-import {FED2_DEFAULT_VERSION, FED2_OPT_IN_URL} from './constants';
+import {
+  DEFAULT_FEDERATION_LINK_IMPORTS,
+  FED2_DEFAULT_VERSION,
+  FED2_OPT_IN_URL,
+} from './constants';
 
 export const createLinkSchemaExtension = (
-  imports: string[] = ['@key'],
+  imports: string[] = DEFAULT_FEDERATION_LINK_IMPORTS,
   version = FED2_DEFAULT_VERSION
 ): SchemaExtensionNode => {
   if (!imports.length) {

@@ -1,6 +1,6 @@
 import {stripIndent as gql} from 'common-tags';
 import {FroidSchema} from '../FroidSchema';
-import {DefinitionNode} from 'graphql';
+import {DefinitionNode, Kind} from 'graphql';
 import {ObjectTypeNode} from '../types';
 import {Key} from '../Key';
 
@@ -106,6 +106,59 @@ describe('FroidSchema class', () => {
 
     expect(errorMessage).toMatch(
       `Federation version must be a valid 'v2.x' version`
+    );
+  });
+
+  it('generates schema document AST', () => {
+    const productSchema = gql`
+      type Product @key(fields: "upc") {
+        upc: String!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const froid = new FroidSchema('relay-subgraph', subgraphs, {});
+
+    expect(froid.toAst().kind).toEqual(Kind.DOCUMENT);
+  });
+
+  it('omits interface object', () => {
+    const productSchema = gql`
+      type Product @key(fields: "upc") {
+        upc: String!
+      }
+
+      type PrintedMedia @interfaceObject @key(fields: "mediaId") {
+        mediaId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+      extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
+
+      type Query {
+        node(id: ID!): Node
+      }
+
+      interface Node {
+        id: ID!
+      }
+
+      type Product implements Node @key(fields: "upc") {
+        id: ID!
+        upc: String!
+      }
+    `
     );
   });
 
@@ -1563,7 +1616,7 @@ describe('FroidSchema class', () => {
       );
     });
 
-    it.only('Stops recursion when an already-visited ancestor is encountered', () => {
+    it('Stops recursion when an already-visited ancestor is encountered', () => {
       const bookSchema = gql`
         type Book @key(fields: "author { name }") {
           author: Author!
@@ -1611,6 +1664,28 @@ describe('FroidSchema class', () => {
         }
       `
       );
+    });
+  });
+
+  describe('createLinkSchemaExtension() method', () => {
+    it('throws an error if no links are provided', () => {
+      let errorMessage = '';
+      const productSchema = gql`
+        type Product @key(fields: "upc") {
+          upc: String!
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('product-subgraph', productSchema);
+
+      try {
+        const froid = new FroidSchema('relay-subgraph', subgraphs, {});
+        // @ts-ignore
+        froid.createLinkSchemaExtension([]);
+      } catch (error) {
+        errorMessage = error.message;
+      }
+      expect(errorMessage).toEqual('At least one import must be provided.');
     });
   });
 });
