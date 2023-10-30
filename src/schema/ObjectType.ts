@@ -5,10 +5,13 @@ import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter} from './FroidSchema';
 import {KeyField} from './KeyField';
 
+const FINAL_KEY_MAX_DEPTH = 200;
+
 /**
  * Collates information about an object type definition node.
  */
 export class ObjectType {
+  public readonly typename: string;
   private _externallySelectedFields: string[] = [];
 
   /**
@@ -25,7 +28,9 @@ export class ObjectType {
     private readonly objectTypes: ObjectTypeDefinitionNode[],
     private readonly extensionAndDefinitionNodes: ObjectTypeNode[],
     private readonly keySorter: KeySorter
-  ) {}
+  ) {
+    this.typename = this.node.name.value;
+  }
 
   /**
    * All occurrences of the node across all subgraph schemas.
@@ -222,31 +227,69 @@ export class ObjectType {
   /**
    * The node's key after all key fields used by other entities are added.
    *
-   * @todo handle key recursion...
+   * @todo handle key recursion:
+   * - Have a max depth and kill recursion if it reaches the max depth (100 levels? 1000 levels?)
+   * - If the parent (Book) is the same type as the child's (Author) grandchild (Book), stop recursion
    * @returns {Key|undefined} The final key. Undefined if the node is not an entity.
    */
   public get finalKey(): Key | undefined {
+    return this.getFinalKey();
+  }
+
+  /**
+   *
+   * @param depth
+   * @param ancestors
+   * @returns
+   */
+  private getFinalKey(depth = 0, ancestors: string[] = []): Key | undefined {
     if (!this.selectedKey) {
+      return;
+    }
+    if (depth > FINAL_KEY_MAX_DEPTH) {
+      console.error(
+        `Encountered max entity key depth on type '${
+          this.typename
+        }'. Depth: ${depth}; Ancestors: "${ancestors.join('", "')}"`
+      );
       return;
     }
     const mergedKey = new Key(
       this.node.name.value,
       this.selectedKey.toString()
     );
-    const keyFromSelections = new Key(
-      this.node.name.value,
-      [...this.selectedKeyFields.map((field) => field.name.value)].join(' ')
-    );
-    mergedKey.merge(keyFromSelections);
+    const selectedKeyFields = [
+      ...this.selectedKeyFields.map((field) => field.name.value),
+    ].join(' ');
+
+    if (selectedKeyFields) {
+      const keyFromSelections = new Key(
+        this.node.name.value,
+        selectedKeyFields
+      );
+      mergedKey.merge(keyFromSelections);
+    }
     Object.entries(this.childObjectsInSelectedKey).forEach(
       ([dependentField, dependencyType]) => {
+        if (ancestors.includes(dependencyType)) {
+          console.error(
+            `Encountered node FROID final key recursion on type "${dependencyType}". Ancestors: "${ancestors.join(
+              '", "'
+            )}"`
+          );
+          return;
+        }
         const dependency = this.froidObjectTypes[dependencyType];
-        if (!dependency.finalKey) {
+        const dependencyFinalKey = dependency.getFinalKey(depth + 1, [
+          ...ancestors,
+          this.typename,
+        ]);
+        if (!dependencyFinalKey) {
           return;
         }
         const keyToMerge = new Key(
           this.node.name.value,
-          `${dependentField} { ${dependency.finalKey.toString()} }`
+          `${dependentField} { ${dependencyFinalKey.toString()} }`
         );
         mergedKey.merge(keyToMerge);
       }

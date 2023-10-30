@@ -1562,5 +1562,55 @@ describe('FroidSchema class', () => {
       `
       );
     });
+
+    it.only('Stops recursion when an already-visited ancestor is encountered', () => {
+      const bookSchema = gql`
+        type Book @key(fields: "author { name }") {
+          author: Author!
+          title: String!
+        }
+
+        type Author @key(fields: "book { title }") {
+          book: Book!
+          name: String!
+        }
+      `;
+
+      const subgraphs = new Map();
+      subgraphs.set('book-subgraph', bookSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'internal'],
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
+
+        type Query {
+          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          id: ID!
+        }
+
+        type Book implements Node @key(fields: "author { __typename name book { __typename title } }") {
+          id: ID!
+          author: Author!
+          title: String! @external
+        }
+
+        type Author implements Node @key(fields: "book { __typename title author { __typename name } }") {
+          id: ID!
+          book: Book!
+          name: String! @external
+        }
+      `
+      );
+    });
   });
 });
