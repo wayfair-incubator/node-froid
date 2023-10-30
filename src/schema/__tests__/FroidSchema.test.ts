@@ -195,50 +195,7 @@ describe('FroidSchema class', () => {
     );
   });
 
-  it('generates valid schema for entity with complex (multi-field) keys', () => {
-    const productSchema = gql`
-      type Query {
-        topProducts(first: Int = 5): [Product]
-      }
-
-      type Product @key(fields: "upc sku") {
-        upc: String!
-        sku: String!
-        name: String
-        price: Int
-        weight: Int
-      }
-    `;
-    const subgraphs = new Map();
-    subgraphs.set('product-subgraph', productSchema);
-
-    const actual = generateSchema({
-      subgraphs,
-      froidSubgraphName: 'relay-subgraph',
-    });
-
-    expect(actual).toEqual(
-      // prettier-ignore
-      gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku") {
-          id: ID!
-          upc: String!
-          sku: String!
-        }
-      `
-    );
-  });
-
+  // @todo FIX THE NAME OF THIS TEST
   it('defaults to generating valid schema using the first non-nested complex (multi-field) keys', () => {
     const productSchema = gql`
       type Query {
@@ -250,282 +207,6 @@ describe('FroidSchema class', () => {
         @key(fields: "upc sku")
         @key(fields: "upc")
         @key(fields: "sku brand { brandId store { storeId } }") {
-        upc: String!
-        sku: String!
-        name: String
-        brand: [Brand!]!
-        price: Int
-        weight: Int
-      }
-
-      type Brand {
-        brandId: Int!
-        store: Store
-      }
-
-      type Store {
-        storeId: Int!
-      }
-    `;
-    const subgraphs = new Map();
-    subgraphs.set('product-subgraph', productSchema);
-
-    const actual = generateSchema({
-      subgraphs,
-      froidSubgraphName: 'relay-subgraph',
-    });
-
-    expect(actual).toEqual(
-      // prettier-ignore
-      gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku brand { __typename brandId store { __typename storeId } }") {
-          id: ID!
-          upc: String!
-          sku: String!
-          brand: [Brand!]!
-        }
-
-        type Brand {
-          brandId: Int!
-          store: Store
-        }
-
-        type Store {
-          storeId: Int!
-        }
-      `
-    );
-  });
-
-  it('uses a custom key sorter to prefer complex keys', () => {
-    const productSchema = gql`
-      type Query {
-        topProducts(first: Int = 5): [Product]
-      }
-
-      type Product
-        @key(fields: "upc sku")
-        @key(fields: "upc sku brand { brandId store { storeId } }")
-        @key(fields: "upc")
-        @key(fields: "sku brand { brandId store { storeId } }") {
-        upc: String!
-        sku: String!
-        name: String
-        brand: [Brand!]!
-        price: Int
-        weight: Int
-      }
-
-      type Brand {
-        brandId: Int!
-        store: Store
-      }
-
-      type Store {
-        storeId: Int!
-      }
-    `;
-    const subgraphs = new Map();
-    subgraphs.set('product-subgraph', productSchema);
-
-    const actual = generateSchema({
-      subgraphs,
-      froidSubgraphName: 'relay-subgraph',
-      keySorter: (keys) => {
-        return keys.sort((a, b) => {
-          return b.depth - a.depth;
-        });
-      },
-    });
-
-    expect(actual).toEqual(
-      // prettier-ignore
-      gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku brand { __typename brandId store { __typename storeId } }") {
-          id: ID!
-          upc: String!
-          sku: String!
-          brand: [Brand!]!
-        }
-
-        type Brand {
-          brandId: Int!
-          store: Store
-        }
-
-        type Store {
-          storeId: Int!
-        }
-      `
-    );
-  });
-
-  it('uses a custom key sorter to prefer the first ordinal key', () => {
-    const productSchema = gql`
-      type Query {
-        topProducts(first: Int = 5): [Product]
-      }
-
-      type Product
-        @key(fields: "upc")
-        @key(fields: "upc sku brand { brandId store { storeId } }")
-        @key(fields: "upc sku")
-        @key(fields: "sku brand { brandId store { storeId } }") {
-        upc: String!
-        sku: String!
-        name: String
-        brand: [Brand!]!
-        price: Int
-        weight: Int
-      }
-
-      type Brand {
-        brandId: Int!
-        store: Store
-      }
-
-      type Store {
-        storeId: Int!
-      }
-    `;
-    const subgraphs = new Map();
-    subgraphs.set('product-subgraph', productSchema);
-
-    const actual = generateSchema({
-      subgraphs,
-      froidSubgraphName: 'relay-subgraph',
-      keySorter: (keys) => keys,
-    });
-
-    expect(actual).toEqual(
-      // prettier-ignore
-      gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc") {
-          id: ID!
-          upc: String!
-        }
-      `
-    );
-  });
-
-  it('uses a custom key sorter to prefer complex keys only when the node is named "Book"', () => {
-    const productSchema = gql`
-      type Query {
-        topProducts(first: Int = 5): [Product]
-      }
-
-      type Product
-        @key(fields: "upc sku")
-        @key(fields: "upc sku brand { brandId }") {
-        upc: String!
-        sku: String!
-        name: String
-        brand: [Brand!]!
-        price: Int
-        weight: Int
-      }
-
-      type Brand {
-        brandId: Int!
-        store: Store
-      }
-
-      type Book
-        @key(fields: "bookId")
-        @key(fields: "bookId author { authorId }") {
-        bookId: String!
-        author: Author!
-      }
-
-      type Author {
-        authorId: String!
-      }
-    `;
-    const subgraphs = new Map();
-    subgraphs.set('product-subgraph', productSchema);
-
-    const actual = generateSchema({
-      subgraphs,
-      froidSubgraphName: 'relay-subgraph',
-      keySorter: (keys, node) => {
-        if (node.name.value === 'Book') {
-          return keys.sort((a, b) => b.depth - a.depth);
-        }
-        return keys;
-      },
-    });
-
-    expect(actual).toEqual(
-      // prettier-ignore
-      gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku") {
-          id: ID!
-          upc: String!
-          sku: String!
-        }
-
-        type Book implements Node @key(fields: "bookId author { __typename authorId }") {
-          id: ID!
-          bookId: String!
-          author: Author!
-        }
-
-        type Author {
-          authorId: String!
-        }
-      `
-    );
-  });
-
-  it('generates valid schema for entity with nested complex (multi-field) keys', () => {
-    const productSchema = gql`
-      type Query {
-        topProducts(first: Int = 5): [Product]
-      }
-
-      type Product
-        @key(fields: "upc sku brand { brandId store { storeId } }")
-        @key(fields: "upc sku brand { brandId }") {
         upc: String!
         sku: String!
         name: String
@@ -1345,6 +1026,326 @@ describe('FroidSchema class', () => {
   });
 
   describe('when generating schema for complex keys', () => {
+    it('uses a custom key sorter to prefer complex keys', () => {
+      const productSchema = gql`
+        type Query {
+          topProducts(first: Int = 5): [Product]
+        }
+
+        type Product
+          @key(fields: "upc sku")
+          @key(fields: "upc sku brand { brandId store { storeId } }")
+          @key(fields: "upc")
+          @key(fields: "sku brand { brandId store { storeId } }") {
+          upc: String!
+          sku: String!
+          name: String
+          brand: [Brand!]!
+          price: Int
+          weight: Int
+        }
+
+        type Brand {
+          brandId: Int!
+          store: Store
+        }
+
+        type Store {
+          storeId: Int!
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('product-subgraph', productSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        keySorter: (keys) => {
+          return keys.sort((a, b) => {
+            return b.depth - a.depth;
+          });
+        },
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+          type Query {
+            node(id: ID!): Node
+          }
+
+          interface Node {
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "upc sku brand { __typename brandId store { __typename storeId } }") {
+            id: ID!
+            upc: String!
+            sku: String!
+            brand: [Brand!]!
+          }
+
+          type Brand {
+            brandId: Int!
+            store: Store
+          }
+
+          type Store {
+            storeId: Int!
+          }
+        `
+      );
+    });
+
+    it('uses a custom key sorter to prefer the first ordinal key', () => {
+      const productSchema = gql`
+        type Query {
+          topProducts(first: Int = 5): [Product]
+        }
+
+        type Product
+          @key(fields: "upc")
+          @key(fields: "upc sku brand { brandId store { storeId } }")
+          @key(fields: "upc sku")
+          @key(fields: "sku brand { brandId store { storeId } }") {
+          upc: String!
+          sku: String!
+          name: String
+          brand: [Brand!]!
+          price: Int
+          weight: Int
+        }
+
+        type Brand {
+          brandId: Int!
+          store: Store
+        }
+
+        type Store {
+          storeId: Int!
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('product-subgraph', productSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        keySorter: (keys) => keys,
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+          type Query {
+            node(id: ID!): Node
+          }
+
+          interface Node {
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "upc") {
+            id: ID!
+            upc: String!
+          }
+        `
+      );
+    });
+
+    it('uses a custom key sorter to prefer complex keys only when the node is named "Book"', () => {
+      const productSchema = gql`
+        type Query {
+          topProducts(first: Int = 5): [Product]
+        }
+
+        type Product
+          @key(fields: "upc sku")
+          @key(fields: "upc sku brand { brandId }") {
+          upc: String!
+          sku: String!
+          name: String
+          brand: [Brand!]!
+          price: Int
+          weight: Int
+        }
+
+        type Brand {
+          brandId: Int!
+          store: Store
+        }
+
+        type Book
+          @key(fields: "bookId")
+          @key(fields: "bookId author { authorId }") {
+          bookId: String!
+          author: Author!
+        }
+
+        type Author {
+          authorId: String!
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('product-subgraph', productSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        keySorter: (keys, node) => {
+          if (node.name.value === 'Book') {
+            return keys.sort((a, b) => b.depth - a.depth);
+          }
+          return keys;
+        },
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+          type Query {
+            node(id: ID!): Node
+          }
+
+          interface Node {
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "upc sku") {
+            id: ID!
+            upc: String!
+            sku: String!
+          }
+
+          type Book implements Node @key(fields: "bookId author { __typename authorId }") {
+            id: ID!
+            bookId: String!
+            author: Author!
+          }
+
+          type Author {
+            authorId: String!
+          }
+        `
+      );
+    });
+
+    it('generates valid schema for entity with nested complex (multi-field) keys', () => {
+      const productSchema = gql`
+        type Query {
+          topProducts(first: Int = 5): [Product]
+        }
+
+        type Product
+          @key(fields: "upc sku brand { brandId store { storeId } }")
+          @key(fields: "upc sku brand { brandId }") {
+          upc: String!
+          sku: String!
+          name: String
+          brand: [Brand!]!
+          price: Int
+          weight: Int
+        }
+
+        type Brand {
+          brandId: Int!
+          store: Store
+        }
+
+        type Store {
+          storeId: Int!
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('product-subgraph', productSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+          type Query {
+            node(id: ID!): Node
+          }
+
+          interface Node {
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "upc sku brand { __typename brandId store { __typename storeId } }") {
+            id: ID!
+            upc: String!
+            sku: String!
+            brand: [Brand!]!
+          }
+
+          type Brand {
+            brandId: Int!
+            store: Store
+          }
+
+          type Store {
+            storeId: Int!
+          }
+        `
+      );
+    });
+
+    it('generates valid schema for entity with complex (multi-field) keys', () => {
+      const productSchema = gql`
+        type Query {
+          topProducts(first: Int = 5): [Product]
+        }
+
+        type Product @key(fields: "upc sku") {
+          upc: String!
+          sku: String!
+          name: String
+          price: Int
+          weight: Int
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('product-subgraph', productSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+          type Query {
+            node(id: ID!): Node
+          }
+
+          interface Node {
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "upc sku") {
+            id: ID!
+            upc: String!
+            sku: String!
+          }
+        `
+      );
+    });
+
     it('finds the complete schema cross-subgraph', () => {
       const magazineSchema = gql`
         type Magazine
@@ -1445,6 +1446,118 @@ describe('FroidSchema class', () => {
         type Address {
           country: String!
           postalCode: String!
+        }
+      `
+      );
+    });
+
+    it('properly identifies shareable fields', () => {
+      const bookSchema = gql`
+        type Book @key(fields: "author { name }") {
+          author: Author!
+        }
+
+        type Author @key(fields: "authorId") {
+          authorId: Int!
+          name: String! @shareable
+        }
+      `;
+
+      const authorSchema = gql`
+        type Author @key(fields: "authorId") {
+          authorId: Int!
+          name: String! @shareable
+        }
+      `;
+
+      const subgraphs = new Map();
+      subgraphs.set('book-subgraph', bookSchema);
+      subgraphs.set('author-subgraph', authorSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'internal'],
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          id: ID!
+        }
+
+        type Book implements Node @key(fields: "author { __typename name authorId }") {
+          id: ID!
+          author: Author!
+        }
+
+        type Author implements Node @key(fields: "authorId") {
+          id: ID!
+          authorId: Int!
+          name: String! @shareable
+        }
+      `
+      );
+    });
+
+    it('properly identifies external fields', () => {
+      const bookSchema = gql`
+        type Book @key(fields: "author { name }") {
+          author: Author!
+        }
+
+        type Author @key(fields: "authorId") {
+          authorId: Int!
+          name: String!
+        }
+      `;
+
+      const authorSchema = gql`
+        type Author @key(fields: "authorId") {
+          authorId: Int!
+          name: String!
+        }
+      `;
+
+      const subgraphs = new Map();
+      subgraphs.set('book-subgraph', bookSchema);
+      subgraphs.set('author-subgraph', authorSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        contractTags: ['storefront', 'internal'],
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+
+        type Query {
+          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          id: ID!
+        }
+
+        type Book implements Node @key(fields: "author { __typename name authorId }") {
+          id: ID!
+          author: Author!
+        }
+
+        type Author implements Node @key(fields: "authorId") {
+          id: ID!
+          authorId: Int!
+          name: String! @external
         }
       `
       );

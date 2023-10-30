@@ -11,7 +11,7 @@ import {KeyField} from './KeyField';
 import {ObjectTypeNode} from './types';
 import assert from 'assert';
 import {
-  KEY_DIRECTIVE,
+  DirectiveName,
   KeyDirectiveArgument,
   TYPENAME_FIELD_NAME,
 } from './constants';
@@ -78,7 +78,7 @@ export class Key {
     }
 
     const keyDirective = objectType.directives.find(
-      (directive) => directive.name.value === KEY_DIRECTIVE
+      (directive) => directive.name.value === DirectiveName.Key
     );
 
     if (!keyDirective) {
@@ -223,7 +223,7 @@ export class Key {
       kind: Kind.DIRECTIVE,
       name: {
         kind: Kind.NAME,
-        value: KEY_DIRECTIVE,
+        value: DirectiveName.Key,
       },
       arguments: [
         {

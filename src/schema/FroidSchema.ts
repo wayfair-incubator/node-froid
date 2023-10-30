@@ -19,15 +19,13 @@ import {
 import {ObjectTypeNode} from './types';
 import {
   CONTRACT_DIRECTIVE_NAME,
-  EXTENDS_DIRECTIVE,
+  DirectiveName,
   EXTERNAL_DIRECTIVE_AST,
   FED2_DEFAULT_VERSION,
   FED2_VERSION_PREFIX,
   ID_FIELD_NAME,
   ID_FIELD_TYPE,
-  INTERFACE_OBJECT_DIRECTIVE,
-  KEY_DIRECTIVE,
-  TAG_DIRECTIVE,
+  SHAREABLE_DIRECTIVE_AST,
 } from './constants';
 import assert from 'assert';
 import {implementsNodeInterface} from './astDefinitions';
@@ -195,6 +193,9 @@ export class FroidSchema {
       ({node, finalKey, selectedKeyFields, selectedNonKeyFields}) => {
         let froidFields: FieldDefinitionNode[] = [];
         let externalFieldDirectives: ConstDirectiveNode[] = [];
+        const shareableFieldDirectives: ConstDirectiveNode[] = [
+          SHAREABLE_DIRECTIVE_AST,
+        ];
         let froidInterfaces: NamedTypeNode[] = [];
         if (FroidSchema.isEntity(node)) {
           froidFields = [
@@ -208,7 +209,10 @@ export class FroidSchema {
           ...selectedKeyFields.map((field) => ({...field, directives: []})),
           ...selectedNonKeyFields.map((field) => ({
             ...field,
-            directives: externalFieldDirectives,
+            directives: FroidSchema.isShareable(field)
+              ? // @todo test the shareable branch of this logic
+                shareableFieldDirectives
+              : externalFieldDirectives,
           })),
         ];
         const finalKeyDirective = finalKey?.toDirective();
@@ -376,7 +380,7 @@ export class FroidSchema {
         ]);
         return taggableNodes?.flatMap((field) =>
           field.directives
-            ?.filter((directive) => directive.name.value === TAG_DIRECTIVE)
+            ?.filter((directive) => directive.name.value === DirectiveName.Tag)
             .map(
               (directive) =>
                 (directive?.arguments?.[0].value as StringValueNode).value
@@ -696,7 +700,7 @@ export class FroidSchema {
         !node.directives?.some(
           (directive) =>
             // exclude @extends directive
-            directive.name.value === EXTENDS_DIRECTIVE ||
+            directive.name.value === DirectiveName.Extends ||
             // exclude  entity references, i.e. @key(fields: "...", resolvable: false)
             directive.arguments?.some(
               (argument) =>
@@ -719,7 +723,7 @@ export class FroidSchema {
       node.kind === Kind.OBJECT_TYPE_EXTENSION ||
       (node.kind === Kind.OBJECT_TYPE_DEFINITION &&
         node.directives?.some(
-          (directive) => directive.name.value === EXTENDS_DIRECTIVE
+          (directive) => directive.name.value === DirectiveName.Extends
         ))
     );
   }
@@ -740,7 +744,8 @@ export class FroidSchema {
         !(
           ('directives' in node &&
             node.directives?.some(
-              (directive) => directive.name.value === INTERFACE_OBJECT_DIRECTIVE
+              (directive) =>
+                directive.name.value === DirectiveName.InterfaceObject
             )) ||
           ('name' in node &&
             node.name &&
@@ -824,7 +829,40 @@ export class FroidSchema {
     const nodesToCheck = Array.isArray(node) ? node : [node];
     return nodesToCheck.some((node) =>
       node?.directives?.some(
-        (directive) => directive.name.value === KEY_DIRECTIVE
+        (directive) => directive.name.value === DirectiveName.Key
+      )
+    );
+  }
+
+  /**
+   * Check whether or not a list of nodes contains a shareable node.
+   *
+   * @param {(ObjectTypeNode | FieldDefinitionNode)[]} nodes - The nodes to check
+   * @returns {boolean} Whether or not any nodes are shareable
+   */
+  private static isShareable(nodes: (ObjectTypeNode | FieldDefinitionNode)[]);
+  /**
+   * Check whether or not a node is shareable.
+   *
+   * @param {ObjectTypeNode | FieldDefinitionNode} node - A node to check
+   * @returns {boolean} Whether or not the node is shareable
+   */
+  private static isShareable(node: ObjectTypeNode | FieldDefinitionNode);
+  /**
+   * Check whether or not one of more nodes is shareable.
+   *
+   * @param {(ObjectTypeNode | FieldDefinitionNode) | (ObjectTypeNode | FieldDefinitionNode)[]} node - One or more nodes to collectively check
+   * @returns {boolean} Whether or not any nodes are shareable
+   */
+  private static isShareable(
+    node:
+      | (ObjectTypeNode | FieldDefinitionNode)
+      | (ObjectTypeNode | FieldDefinitionNode)[]
+  ): boolean {
+    const nodesToCheck = Array.isArray(node) ? node : [node];
+    return nodesToCheck.some((node) =>
+      node?.directives?.some(
+        (directive) => directive.name.value === DirectiveName.Shareable
       )
     );
   }

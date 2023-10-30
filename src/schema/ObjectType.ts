@@ -1,6 +1,6 @@
 import {FieldDefinitionNode, ObjectTypeDefinitionNode} from 'graphql';
 import {Key} from './Key';
-import {KEY_DIRECTIVE} from './constants';
+import {DirectiveName} from './constants';
 import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter} from './FroidSchema';
 import {KeyField} from './KeyField';
@@ -47,7 +47,7 @@ export class ObjectType {
     return this.occurrences.flatMap(
       (occurrence) =>
         occurrence.directives
-          ?.filter((directive) => directive.name.value === KEY_DIRECTIVE)
+          ?.filter((directive) => directive.name.value === DirectiveName.Key)
           .map((key) => new Key(this.node.name.value, key)) || []
     );
   }
