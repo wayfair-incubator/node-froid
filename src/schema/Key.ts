@@ -21,20 +21,10 @@ import {
  */
 export class Key {
   /**
-   * The name of the object this key is associated with.
-   */
-  public readonly typename: string;
-  /**
    * The key's fields.
    */
   private _fields: KeyField[] = [];
 
-  /**
-   * Creates a key from the first key directive of an ObjectTypeNode.
-   *
-   * @param {ObjectTypeNode} objectType - The object node the key will be generated from
-   */
-  constructor(objectType: ObjectTypeNode);
   /**
    * Creates a key from the key fields of an object type.
    *
@@ -52,48 +42,15 @@ export class Key {
   /**
    * Creates a key from an object type, key directive AST, or key directive fields string.
    *
-   * @param {string|ObjectTypeNode} type - An object type or its name
-   * @param {string|ConstDirectiveNode|undefined} keyFields - The object's key directive or fields
+   * @param {string|ObjectTypeNode} typename - An object type or its name
+   * @param {string|ConstDirectiveNode} keyFields - The object's key directive or fields
    */
   constructor(
-    type: string | ObjectTypeNode,
-    keyFields?: string | ConstDirectiveNode
+    public readonly typename: string,
+    keyFields: string | ConstDirectiveNode
   ) {
-    if (typeof type === 'string') {
-      assert(
-        keyFields,
-        `Cannot create key without both a typename and key fields. Received typename '${type}' and key fields '${keyFields}'`
-      );
-      this.typename = type;
-      this.parseToFields(keyFields);
-      return;
-    }
-    const objectType = type;
-    this.typename = objectType.name.value;
-    this._fields = [];
-
-    if (!objectType.directives) {
-      // If the object has no directives as all, we can safely skip it
-      return;
-    }
-
-    const keyDirective = objectType.directives.find(
-      (directive) => directive.name.value === DirectiveName.Key
-    );
-
-    if (!keyDirective) {
-      // If the object has no key, we can safely skip it
-      return;
-    }
-
-    const fieldsString = Key.getKeyDirectiveFields(keyDirective);
-
-    assert(
-      fieldsString,
-      `Encountered an @key directive with an improperly formatted "fields" argument on type "${this.typename}".`
-    );
-
-    this.parseToFields(fieldsString);
+    this.parseToFields(keyFields);
+    return;
   }
 
   /**

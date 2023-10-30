@@ -19,9 +19,11 @@ import {
 import {ObjectTypeNode} from './types';
 import {
   CONTRACT_DIRECTIVE_NAME,
+  DEFAULT_FEDERATION_LINK_IMPORTS,
   DirectiveName,
   EXTERNAL_DIRECTIVE_AST,
   FED2_DEFAULT_VERSION,
+  FED2_OPT_IN_URL,
   FED2_VERSION_PREFIX,
   ID_FIELD_NAME,
   ID_FIELD_TYPE,
@@ -29,7 +31,6 @@ import {
 } from './constants';
 import assert from 'assert';
 import {implementsNodeInterface} from './astDefinitions';
-import {FED2_OPT_IN_URL} from './createLinkSchemaExtension';
 import {Key} from './Key';
 import {KeyField} from './KeyField';
 import {ObjectType} from './ObjectType';
@@ -174,7 +175,7 @@ export class FroidSchema {
     this.froidAst = {
       kind: Kind.DOCUMENT,
       definitions: [
-        this.createLinkSchemaExtension(['@key', '@tag']),
+        this.createLinkSchemaExtension(),
         ...this.createCustomReturnTypes(),
         this.createQueryDefinition(),
         this.createNodeInterface(),
@@ -407,7 +408,7 @@ export class FroidSchema {
    * @returns {SchemaExtensionNode} A schema extension node that includes the @link directive.
    */
   private createLinkSchemaExtension(
-    imports: string[] = ['@key']
+    imports: string[] = DEFAULT_FEDERATION_LINK_IMPORTS
   ): SchemaExtensionNode {
     if (!imports.length) {
       throw new Error('At least one import must be provided.');

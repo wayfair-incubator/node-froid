@@ -1,4 +1,4 @@
-import {FieldNode, Kind, SelectionNode} from 'graphql';
+import {FieldNode} from 'graphql';
 import {TYPENAME_FIELD_NAME} from './constants';
 
 /**
@@ -17,30 +17,23 @@ export class KeyField {
   /**
    * Creates a key field.
    *
-   * @param {FieldNode|KeyField} field - The field this key field will represent
+   * @param {FieldNode} field - The field this key field will represent
    */
-  constructor(field: FieldNode | KeyField) {
-    if (field instanceof KeyField) {
-      this.name = KeyField.name;
-      this._selections = field._selections;
-      return;
-    }
+  constructor(field: FieldNode) {
     this.name = field.name.value;
     field.selectionSet?.selections?.forEach((selection) =>
-      this.addSelection(selection)
+      // Key selections can only contain Object Type fields
+      this.addSelection(selection as FieldNode)
     );
   }
 
   /**
    * Add a selection to the key field's child selections.
    *
-   * @param {SelectionNode} selection - Selection AST
+   * @param {FieldNode} selection - Selection field AST
    * @returns {void}
    */
-  public addSelection(selection: SelectionNode): void {
-    if (selection.kind !== Kind.FIELD) {
-      return;
-    }
+  public addSelection(selection: FieldNode): void {
     if (
       selection.name.value === TYPENAME_FIELD_NAME ||
       this._selections.find((field) => field.name === selection.name.value)
@@ -58,9 +51,6 @@ export class KeyField {
    */
   public merge(keyField: KeyField): void {
     keyField._selections.forEach((mergeSelection) => {
-      if (mergeSelection.name === TYPENAME_FIELD_NAME) {
-        return;
-      }
       const existingSelection = this._selections.find(
         (compareSelection) => compareSelection.name === mergeSelection.name
       );
@@ -79,15 +69,6 @@ export class KeyField {
    */
   public get selections(): KeyField[] {
     return this._selections;
-  }
-
-  /**
-   * The names of the first level of this key field's child selections.
-   *
-   * @returns {string[]} - The child selection names
-   */
-  public get selectionsList(): string[] {
-    return this._selections.map((selection) => selection.name);
   }
 
   /**

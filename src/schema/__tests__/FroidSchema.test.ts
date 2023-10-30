@@ -138,7 +138,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -177,7 +177,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -235,7 +235,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -341,7 +341,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -401,7 +401,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -459,7 +459,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -521,7 +521,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -607,7 +607,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node
@@ -670,7 +670,7 @@ describe('FroidSchema class', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         scalar UsedCustomScalar1
 
@@ -726,7 +726,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
@@ -769,7 +769,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
@@ -842,7 +842,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
@@ -932,7 +932,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         scalar UsedCustomScalar1
 
@@ -1001,7 +1001,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
@@ -1070,7 +1070,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node
@@ -1139,7 +1139,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node
@@ -1207,7 +1207,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node
@@ -1273,7 +1273,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node
@@ -1327,7 +1327,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
           type Query {
             node(id: ID!): Node
@@ -1410,7 +1410,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
@@ -1483,7 +1483,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
@@ -1539,7 +1539,7 @@ describe('FroidSchema class', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
 
         type Query {
           node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")

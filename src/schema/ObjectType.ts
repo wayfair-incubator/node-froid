@@ -94,17 +94,6 @@ export class ObjectType {
   }
 
   /**
-   * All the fields of the node that do not appear in keys.
-   *
-   * @returns {FieldDefinitionNode[]} The list of non-key fields
-   */
-  public get allNonKeyFields(): FieldDefinitionNode[] {
-    return this.allFields.filter(
-      (field) => !this.allKeyFieldsList.includes(field.name.value)
-    );
-  }
-
-  /**
    * The key selected for use in the FROID schema.
    *
    * @returns {Key|undefined} The selected key
