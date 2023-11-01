@@ -364,7 +364,8 @@ export class FroidSchema {
   }
 
   /**
-   * Returns all non-extended types with explicit ownership to a single subgraph
+   * Get contract @tag directives for an ID field. Returns all occurrences of unique @tag
+   * directives used across all fields included in the node's @key directive
    *
    * @param {ObjectTypeDefinitionNode} node - The node to process `@key` directives for
    * @returns {ConstDirectiveNode[]} A list of `@tag` directives to use for the given `id` field
@@ -391,14 +392,12 @@ export class FroidSchema {
       .filter(Boolean)
       .sort() as string[];
 
-    const tagDirectives: ConstDirectiveNode[] = [];
-    const uniqueTagDirectivesNames = [...new Set(tagDirectiveNames || [])];
-
-    uniqueTagDirectivesNames.forEach((tagName) => {
-      tagDirectives.push(FroidSchema.createTagDirective(tagName));
-    });
-
-    return tagDirectives;
+    const uniqueTagDirectivesNames: string[] = [
+      ...new Set(tagDirectiveNames || []),
+    ];
+    return uniqueTagDirectivesNames.map<ConstDirectiveNode>((tagName) =>
+      FroidSchema.createTagDirective(tagName)
+    );
   }
 
   /**
