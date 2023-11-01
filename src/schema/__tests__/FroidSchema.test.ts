@@ -248,8 +248,7 @@ describe('FroidSchema class', () => {
     );
   });
 
-  // @todo FIX THE NAME OF THIS TEST
-  it('defaults to generating valid schema using the first non-nested complex (multi-field) keys', () => {
+  it('defaults to generating valid schema using the first key found regardless of complexity', () => {
     const productSchema = gql`
       type Query {
         topProducts(first: Int = 5): [Product]
