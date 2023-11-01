@@ -27,7 +27,6 @@ import {
   FED2_VERSION_PREFIX,
   ID_FIELD_NAME,
   ID_FIELD_TYPE,
-  SHAREABLE_DIRECTIVE_AST,
 } from './constants';
 import assert from 'assert';
 import {implementsNodeInterface} from './astDefinitions';
@@ -194,9 +193,6 @@ export class FroidSchema {
       ({node, finalKey, selectedKeyFields, selectedNonKeyFields}) => {
         let froidFields: FieldDefinitionNode[] = [];
         let externalFieldDirectives: ConstDirectiveNode[] = [];
-        const shareableFieldDirectives: ConstDirectiveNode[] = [
-          SHAREABLE_DIRECTIVE_AST,
-        ];
         let froidInterfaces: NamedTypeNode[] = [];
         if (FroidSchema.isEntity(node)) {
           froidFields = [
@@ -210,10 +206,7 @@ export class FroidSchema {
           ...selectedKeyFields.map((field) => ({...field, directives: []})),
           ...selectedNonKeyFields.map((field) => ({
             ...field,
-            directives: FroidSchema.isShareable(field)
-              ? // @todo test the shareable branch of this logic
-                shareableFieldDirectives
-              : externalFieldDirectives,
+            directives: externalFieldDirectives,
           })),
         ];
         const finalKeyDirective = finalKey?.toDirective();
@@ -830,39 +823,6 @@ export class FroidSchema {
     return nodesToCheck.some((node) =>
       node?.directives?.some(
         (directive) => directive.name.value === DirectiveName.Key
-      )
-    );
-  }
-
-  /**
-   * Check whether or not a list of nodes contains a shareable node.
-   *
-   * @param {(ObjectTypeNode | FieldDefinitionNode)[]} nodes - The nodes to check
-   * @returns {boolean} Whether or not any nodes are shareable
-   */
-  private static isShareable(nodes: (ObjectTypeNode | FieldDefinitionNode)[]);
-  /**
-   * Check whether or not a node is shareable.
-   *
-   * @param {ObjectTypeNode | FieldDefinitionNode} node - A node to check
-   * @returns {boolean} Whether or not the node is shareable
-   */
-  private static isShareable(node: ObjectTypeNode | FieldDefinitionNode);
-  /**
-   * Check whether or not one of more nodes is shareable.
-   *
-   * @param {(ObjectTypeNode | FieldDefinitionNode) | (ObjectTypeNode | FieldDefinitionNode)[]} node - One or more nodes to collectively check
-   * @returns {boolean} Whether or not any nodes are shareable
-   */
-  private static isShareable(
-    node:
-      | (ObjectTypeNode | FieldDefinitionNode)
-      | (ObjectTypeNode | FieldDefinitionNode)[]
-  ): boolean {
-    const nodesToCheck = Array.isArray(node) ? node : [node];
-    return nodesToCheck.some((node) =>
-      node?.directives?.some(
-        (directive) => directive.name.value === DirectiveName.Shareable
       )
     );
   }
