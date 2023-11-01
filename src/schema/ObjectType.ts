@@ -5,7 +5,7 @@ import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter} from './FroidSchema';
 import {KeyField} from './KeyField';
 
-const FINAL_KEY_MAX_DEPTH = 200;
+const FINAL_KEY_MAX_DEPTH = 100;
 
 /**
  * Collates information about an object type definition node.
@@ -227,9 +227,6 @@ export class ObjectType {
   /**
    * The node's key after all key fields used by other entities are added.
    *
-   * @todo handle key recursion:
-   * - Have a max depth and kill recursion if it reaches the max depth (100 levels? 1000 levels?)
-   * - If the parent (Book) is the same type as the child's (Author) grandchild (Book), stop recursion
    * @returns {Key|undefined} The final key. Undefined if the node is not an entity.
    */
   public get finalKey(): Key | undefined {
@@ -237,10 +234,11 @@ export class ObjectType {
   }
 
   /**
+   * Generated the final key for the node based on all descendant types and their keys (if they have keys).
    *
-   * @param depth
-   * @param ancestors
-   * @returns
+   * @param {number} depth - The current nesting depth of the key. Defaults to 0.
+   * @param {string[]} ancestors - The type name of ancestors that have been traversed up to the current key depth.
+   * @returns {Key|undefined} The final key or undefined if the node has no key.
    */
   private getFinalKey(depth = 0, ancestors: string[] = []): Key | undefined {
     if (!this.selectedKey) {
