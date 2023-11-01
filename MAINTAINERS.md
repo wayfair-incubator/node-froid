@@ -8,3 +8,4 @@
 - [@samjcombs](https://github.com/samjcombs)
 - [@iksinski](https://github.com/iksinski)
 - [@thiscompsciguy](https://github.com/thiscompsciguy)
+- [@samanashrestha](https://github.com/samanashrestha)
