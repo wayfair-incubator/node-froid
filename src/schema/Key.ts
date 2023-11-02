@@ -1,11 +1,14 @@
 import {
   ConstDirectiveNode,
   DocumentNode,
+  FieldNode,
   Kind,
   OperationDefinitionNode,
   SelectionNode,
+  SelectionSetNode,
   StringValueNode,
   parse,
+  print,
 } from 'graphql';
 import {KeyField} from './KeyField';
 import {ObjectTypeNode} from './types';
@@ -15,6 +18,9 @@ import {
   KeyDirectiveArgument,
   TYPENAME_FIELD_NAME,
 } from './constants';
+
+const WRAPPING_CURLY_BRACES_REGEXP = /^\{(.*)\}$/s;
+const INDENTED_MULTILINE_REGEXP = /(\n|\s)+/g;
 
 /**
  * Represents an object key directive as a structures object.
@@ -167,7 +173,9 @@ export class Key {
    * @returns {string} The fields string
    */
   public toString(): string {
-    return this._fields.map((field) => field.toString()).join(' ');
+    return Key.getSortedSelectionSetFields(
+      this._fields.map((field) => field.toString()).join(' ')
+    );
   }
 
   /**
@@ -220,5 +228,89 @@ export class Key {
         (arg) => arg.name.value === KeyDirectiveArgument.Fields
       )?.value as StringValueNode
     ).value;
+  }
+
+  /**
+   * Sorts the selection set fields.
+   *
+   * @param {string} fields - The selection set fields.
+   * @returns {string} The sorted selection set fields.
+   */
+  protected static getSortedSelectionSetFields(fields: string): string {
+    const selections = Key.sortSelectionSetByNameAscending(
+      (Key.parseKeyFields(fields).definitions[0] as OperationDefinitionNode)
+        .selectionSet
+    );
+    return Key.formatSelectionSetFields(print(selections));
+  }
+
+  /**
+   * Sorts the selection set by name, ascending.
+   *
+   * @param {SelectionSetNode | SelectionNode} node - The selection set node.
+   * @returns {SelectionSetNode | SelectionNode} The sorted selection set.
+   */
+  protected static sortSelectionSetByNameAscending<
+    T extends SelectionSetNode | SelectionNode
+  >(
+    node: T
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): T {
+    if (node.kind === Kind.SELECTION_SET) {
+      const selections = node.selections
+        .map<FieldNode>((selection) => {
+          return this.sortSelectionSetByNameAscending(selection) as FieldNode;
+        })
+        .sort(Key.sortASTByNameAscending);
+      return {
+        ...node,
+        selections,
+      } as T;
+    }
+    if (node.kind === Kind.FIELD) {
+      if (node.selectionSet) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const selections = (node.selectionSet.selections as any)
+          .map((selection) => {
+            return Key.sortSelectionSetByNameAscending(selection);
+          })
+          .sort(Key.sortASTByNameAscending);
+        return {
+          ...node,
+          selectionSet: {
+            ...node.selectionSet,
+            selections,
+          },
+        };
+      }
+      return node;
+    }
+    return node;
+  }
+
+  /**
+   * Sorts AST by name, ascending.
+   *
+   * @param {FieldNode} a - The first node to be compared
+   * @param {FieldNode} b - The second node to be compared
+   * @returns {number} The ordinal adjustment to be made
+   */
+  protected static sortASTByNameAscending(a: FieldNode, b: FieldNode): number {
+    return a.name.value.localeCompare(b.name.value);
+  }
+
+  /**
+   * Formats a selection set string for use in a directive.
+   *
+   * @param {string} selectionSetString - The selection set string.
+   * @returns {string} The formatted selection set string.
+   */
+  protected static formatSelectionSetFields(
+    selectionSetString: string
+  ): string {
+    return selectionSetString
+      .replace(WRAPPING_CURLY_BRACES_REGEXP, '$1')
+      .replace(INDENTED_MULTILINE_REGEXP, ' ')
+      .trim();
   }
 }

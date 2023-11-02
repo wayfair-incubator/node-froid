@@ -30,6 +30,7 @@ import {createLinkSchemaExtension} from './createLinkSchemaExtension';
 import {createFederationV1TagDirectiveDefinition} from './createFederationV1TagDirectiveDefinition';
 import {ObjectTypeNode, KeyMappingRecord, ValidKeyDirective} from './types';
 import {removeInterfaceObjects} from './removeInterfaceObjects';
+import {sortDocumentAst} from './sortDocumentAst';
 
 type KeySorter = (keys: string[], node: ObjectTypeNode) => string[];
 
@@ -457,7 +458,7 @@ export function generateFroidSchema(
         );
 
   // build schema
-  return {
+  return sortDocumentAst({
     kind: Kind.DOCUMENT,
     definitions: [
       tagDefinition,
@@ -470,5 +471,5 @@ export function generateFroidSchema(
       createNodeInterface(allTagDirectives),
       ...Object.values(relayObjectTypes),
     ],
-  } as DocumentNode;
+  } as DocumentNode);
 }

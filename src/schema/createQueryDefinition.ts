@@ -24,6 +24,10 @@ export function createQueryDefinition(
     fields: [
       {
         kind: Kind.FIELD_DEFINITION,
+        description: {
+          kind: Kind.STRING,
+          value: 'Fetches an entity by its globally unique identifier.',
+        },
         name: {
           kind: Kind.NAME,
           value: 'node',
@@ -31,6 +35,10 @@ export function createQueryDefinition(
         arguments: [
           {
             kind: Kind.INPUT_VALUE_DEFINITION,
+            description: {
+              kind: Kind.STRING,
+              value: 'A globally unique entity identifier.',
+            },
             name: {
               kind: Kind.NAME,
               value: ID_FIELD_NAME,

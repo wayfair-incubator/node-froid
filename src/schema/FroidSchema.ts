@@ -1,4 +1,5 @@
 import {
+  ASTNode,
   ConstArgumentNode,
   ConstDirectiveNode,
   DefinitionNode,
@@ -22,7 +23,6 @@ import {
   DEFAULT_FEDERATION_LINK_IMPORTS,
   DirectiveName,
   EXTERNAL_DIRECTIVE_AST,
-  FED2_DEFAULT_VERSION,
   FED2_OPT_IN_URL,
   FED2_VERSION_PREFIX,
   ID_FIELD_NAME,
@@ -33,6 +33,7 @@ import {implementsNodeInterface} from './astDefinitions';
 import {Key} from './Key';
 import {KeyField} from './KeyField';
 import {ObjectType} from './ObjectType';
+import {sortDocumentAst} from './sortDocumentAst';
 
 type SupportedFroidReturnTypes =
   | ScalarTypeDefinitionNode
@@ -40,7 +41,7 @@ type SupportedFroidReturnTypes =
 
 export type KeySorter = (keys: Key[], node: ObjectTypeNode) => Key[];
 export type NodeQualifier = (
-  node: DefinitionNode,
+  node: ASTNode,
   objectTypes: ObjectTypeNode[]
 ) => boolean;
 
@@ -121,15 +122,17 @@ export class FroidSchema {
    * Creates the FROID schema.
    *
    * @param {string} name - The name of the subgraph that serves the FROID schema.
+   * @param {string} federationVersion - The Apollo Federation version to use for the FROID schema.
    * @param {Map<string, string>} schemas - The source schemas from which the FROID schema will be generated.
    * @param {FroidSchemaOptions} options - The options for FROID schema generation.
    */
   constructor(
     name: string,
+    federationVersion: string,
     schemas: Map<string, string>,
     options: FroidSchemaOptions
   ) {
-    this.federationVersion = options?.federationVersion ?? FED2_DEFAULT_VERSION;
+    this.federationVersion = federationVersion;
 
     assert(
       this.federationVersion.indexOf(FED2_VERSION_PREFIX) > -1,
@@ -171,7 +174,7 @@ export class FroidSchema {
     this.generateFroidDependencies();
 
     // build schema
-    this.froidAst = {
+    this.froidAst = sortDocumentAst({
       kind: Kind.DOCUMENT,
       definitions: [
         this.createLinkSchemaExtension(),
@@ -180,7 +183,7 @@ export class FroidSchema {
         this.createNodeInterface(),
         ...this.createObjectTypesAST(),
       ],
-    } as DocumentNode;
+    } as DocumentNode);
   }
 
   /**
@@ -203,15 +206,21 @@ export class FroidSchema {
         }
         const fields = [
           ...froidFields,
-          ...selectedKeyFields.map((field) => ({...field, directives: []})),
+          ...selectedKeyFields.map((field) => ({
+            ...field,
+            description: undefined,
+            directives: [],
+          })),
           ...selectedNonKeyFields.map((field) => ({
             ...field,
+            description: undefined,
             directives: externalFieldDirectives,
           })),
         ];
         const finalKeyDirective = finalKey?.toDirective();
         return {
           ...node,
+          description: undefined,
           interfaces: froidInterfaces,
           directives: [...(finalKeyDirective ? [finalKeyDirective] : [])],
           fields,
@@ -273,7 +282,8 @@ export class FroidSchema {
       this.froidObjectTypes,
       this.objectTypes,
       this.extensionAndDefinitionNodes,
-      this.keySorter
+      this.keySorter,
+      this.nodeQualifier
     );
 
     this.froidObjectTypes[node.name.value] = nodeInfo;
@@ -491,34 +501,37 @@ export class FroidSchema {
       this.filteredDefinitionNodes.filter((definitionNode) =>
         typeDefinitionKinds.includes(definitionNode.kind)
       ) as SupportedFroidReturnTypes[]
-    ).filter((nonNativeScalarType) => {
+    ).forEach((nonNativeScalarType) => {
       const returnTypeName = nonNativeScalarType.name.value;
-      // Get only types that are returned in froid schema
       if (
-        nonNativeScalarDefinitionNames.has(returnTypeName) &&
-        !nonNativeScalarFieldTypes.has(returnTypeName)
+        !nonNativeScalarDefinitionNames.has(returnTypeName) ||
+        nonNativeScalarFieldTypes.has(returnTypeName)
       ) {
-        if (nonNativeScalarType.kind === Kind.ENUM_TYPE_DEFINITION) {
-          const enumValues = nonNativeScalarType.values?.map((enumValue) => ({
-            ...enumValue,
-            directives: enumValue.directives?.filter(
-              (directive) => directive.name.value === 'inaccessible'
-            ),
-          }));
-          nonNativeScalarFieldTypes.set(returnTypeName, {
-            ...nonNativeScalarType,
-            values: enumValues,
-            directives: [],
-            description: undefined,
-          } as EnumTypeDefinitionNode);
-        } else if (nonNativeScalarType.kind === Kind.SCALAR_TYPE_DEFINITION) {
-          nonNativeScalarFieldTypes.set(returnTypeName, {
-            ...nonNativeScalarType,
-            description: undefined,
-            directives: [],
-          } as ScalarTypeDefinitionNode);
-        }
+        // Don't get types that are not returned in froid schema
+        return;
       }
+
+      if (nonNativeScalarType.kind === Kind.ENUM_TYPE_DEFINITION) {
+        const enumValues = nonNativeScalarType.values?.map((enumValue) => ({
+          ...enumValue,
+          directives: enumValue.directives?.filter(
+            (directive) => directive.name.value === 'inaccessible'
+          ),
+        }));
+        nonNativeScalarFieldTypes.set(returnTypeName, {
+          ...nonNativeScalarType,
+          values: enumValues,
+          directives: [],
+          description: undefined,
+        } as EnumTypeDefinitionNode);
+        return;
+      }
+
+      nonNativeScalarFieldTypes.set(returnTypeName, {
+        ...nonNativeScalarType,
+        description: undefined,
+        directives: [],
+      } as ScalarTypeDefinitionNode);
     });
 
     return [...nonNativeScalarFieldTypes.values()];
@@ -544,6 +557,10 @@ export class FroidSchema {
       fields: [
         {
           kind: Kind.FIELD_DEFINITION,
+          description: {
+            kind: Kind.STRING,
+            value: 'Fetches an entity by its globally unique identifier.',
+          },
           name: {
             kind: Kind.NAME,
             value: 'node',
@@ -551,6 +568,10 @@ export class FroidSchema {
           arguments: [
             {
               kind: Kind.INPUT_VALUE_DEFINITION,
+              description: {
+                kind: Kind.STRING,
+                value: 'A globally unique entity identifier.',
+              },
               name: {
                 kind: Kind.NAME,
                 value: ID_FIELD_NAME,
@@ -592,6 +613,11 @@ export class FroidSchema {
   private createNodeInterface(): InterfaceTypeDefinitionNode {
     return {
       kind: Kind.INTERFACE_TYPE_DEFINITION,
+      description: {
+        kind: Kind.STRING,
+        value:
+          'The global identification interface implemented by all entities.',
+      },
       name: {
         kind: Kind.NAME,
         value: 'Node',
@@ -652,6 +678,10 @@ export class FroidSchema {
   ): FieldDefinitionNode {
     return {
       kind: Kind.FIELD_DEFINITION,
+      description: {
+        kind: Kind.STRING,
+        value: `The globally unique identifier.`,
+      },
       name: {
         kind: Kind.NAME,
         value: ID_FIELD_NAME,

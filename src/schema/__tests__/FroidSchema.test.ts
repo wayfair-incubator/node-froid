@@ -1,8 +1,7 @@
 import {stripIndent as gql} from 'common-tags';
-import {FroidSchema} from '../FroidSchema';
-import {DefinitionNode, Kind} from 'graphql';
-import {ObjectTypeNode} from '../types';
-import {Key} from '../Key';
+import {FroidSchema, KeySorter, NodeQualifier} from '../FroidSchema';
+import {Kind} from 'graphql';
+import {FED2_DEFAULT_VERSION} from '../constants';
 
 function generateSchema({
   subgraphs,
@@ -17,26 +16,27 @@ function generateSchema({
   froidSubgraphName: string;
   contractTags?: string[];
   typeExceptions?: string[];
-  federationVersion?: string;
-  nodeQualifier?: (
-    node: DefinitionNode,
-    objectTypes: ObjectTypeNode[]
-  ) => boolean;
-  keySorter?: (keys: Key[], node: ObjectTypeNode) => Key[];
+  federationVersion: string;
+  nodeQualifier?: NodeQualifier;
+  keySorter?: KeySorter;
 }) {
-  const froidSchema = new FroidSchema(froidSubgraphName, subgraphs, {
-    contractTags,
-    typeExceptions,
-    nodeQualifier,
+  const froidSchema = new FroidSchema(
+    froidSubgraphName,
     federationVersion,
-    keySorter,
-  });
+    subgraphs,
+    {
+      contractTags,
+      typeExceptions,
+      nodeQualifier,
+      keySorter,
+    }
+  );
 
   return froidSchema.toString();
 }
 
 describe('FroidSchema class', () => {
-  it('defaults the federation version to 2.0', () => {
+  it('requires a federation version', () => {
     const productSchema = gql`
       type Product @key(fields: "upc") {
         upc: String!
@@ -48,17 +48,23 @@ describe('FroidSchema class', () => {
     const subgraphs = new Map();
     subgraphs.set('product-subgraph', productSchema);
 
-    const actual = generateSchema({
-      subgraphs,
-      froidSubgraphName: 'relay-subgraph',
-    });
+    let errorMessage = '';
+    try {
+      generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        federationVersion: 'v3.1',
+      });
+    } catch (err) {
+      errorMessage = err.message;
+    }
 
-    expect(actual).toMatch(
-      'extend schema @link(url: "https://specs.apollo.dev/federation/v2.0"'
+    expect(errorMessage).toMatch(
+      `Federation version must be a valid 'v2.x' version`
     );
   });
 
-  it('honors a custom 2.x federation version', () => {
+  it('honors a 2.x federation version', () => {
     const productSchema = gql`
       type Product @key(fields: "upc") {
         upc: String!
@@ -118,7 +124,12 @@ describe('FroidSchema class', () => {
     const subgraphs = new Map();
     subgraphs.set('product-subgraph', productSchema);
 
-    const froid = new FroidSchema('relay-subgraph', subgraphs, {});
+    const froid = new FroidSchema(
+      'relay-subgraph',
+      FED2_DEFAULT_VERSION,
+      subgraphs,
+      {}
+    );
 
     expect(froid.toAst().kind).toEqual(Kind.DOCUMENT);
   });
@@ -139,6 +150,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -146,17 +158,24 @@ describe('FroidSchema class', () => {
       gql`
       extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-      type Query {
-        node(id: ID!): Node
-      }
-
+      "The global identification interface implemented by all entities."
       interface Node {
+        "The globally unique identifier."
         id: ID!
       }
 
       type Product implements Node @key(fields: "upc") {
+        "The globally unique identifier."
         id: ID!
         upc: String!
+      }
+
+      type Query {
+        "Fetches an entity by its globally unique identifier."
+        node(
+          "A globally unique entity identifier."
+          id: ID!
+        ): Node
       }
     `
     );
@@ -186,6 +205,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -193,17 +213,24 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -225,6 +252,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -232,17 +260,24 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -282,6 +317,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -289,24 +325,31 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku brand { __typename brandId store { __typename storeId } }") {
-          id: ID!
-          upc: String!
-          sku: String!
-          brand: [Brand!]!
-        }
-
         type Brand {
           brandId: Int!
           store: Store
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "brand { __typename brandId store { __typename storeId } } sku upc") {
+          "The globally unique identifier."
+          id: ID!
+          brand: [Brand!]!
+          sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
         type Store {
@@ -388,6 +431,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -395,22 +439,30 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
-        type User implements Node @key(fields: "userId") {
-          id: ID!
-          userId: String!
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
         type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
           todoId: Int!
+        }
+
+        type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
+          id: ID!
+          userId: String!
         }
       `
     );
@@ -437,7 +489,7 @@ describe('FroidSchema class', () => {
     `;
 
     const brandSchema = gql`
-      type Brand @key(fields: "brandId") {
+      type Brand @key(fields: "brandId") @key(fields: "alternateBrandId") {
         brandId: Int!
       }
     `;
@@ -448,6 +500,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -455,24 +508,32 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
         type Brand implements Node @key(fields: "brandId") {
+          "The globally unique identifier."
           id: ID!
           brandId: Int!
         }
 
-        type Product implements Node @key(fields: "upc sku brand { __typename brandId }") {
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
           id: ID!
-          upc: String!
-          sku: String!
+        }
+
+        type Product implements Node @key(fields: "brand { __typename brandId } sku upc") {
+          "The globally unique identifier."
+          id: ID!
           brand: [Brand!]!
+          sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -506,6 +567,7 @@ describe('FroidSchema class', () => {
       froidSubgraphName: 'relay-subgraph',
       contractTags: [],
       typeExceptions: ['Todo'],
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -513,15 +575,22 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
         type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String!
         }
@@ -568,6 +637,7 @@ describe('FroidSchema class', () => {
       contractTags: [],
       typeExceptions: [],
       nodeQualifier,
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -575,20 +645,28 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
         type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
           todoId: Int!
         }
 
         type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String!
         }
@@ -618,32 +696,42 @@ describe('FroidSchema class', () => {
         userId: String!
       }
     `;
+    // prettier-ignore
     const relaySchema = gql`
+      type AnotherType implements Node @key(fields: "someId") {
+        "The globally unique identifier."
+        id: ID!
+        someId: Int!
+      }
+
       directive @tag(
         name: String!
-      ) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+      ) repeatable on ARGUMENT_DEFINITION | ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION
+
+      "The global identification interface implemented by all entities."
+      interface Node {
+        "The globally unique identifier."
+        id: ID!
+      }
 
       type Query {
-        node(id: ID!): Node
-      }
-
-      interface Node {
-        id: ID!
-      }
-
-      type User implements Node @key(fields: "userId") {
-        id: ID!
-        userId: String!
+        "Fetches an entity by its globally unique identifier."
+        node(
+          "A globally unique entity identifier."
+          id: ID!
+        ): Node
       }
 
       type Todo implements Node @key(fields: "todoId") {
+        "The globally unique identifier."
         id: ID!
         todoId: Int!
       }
 
-      type AnotherType implements Node @key(fields: "someId") {
+      type User implements Node @key(fields: "userId") {
+        "The globally unique identifier."
         id: ID!
-        someId: Int!
+        userId: String!
       }
     `;
     const subgraphs = new Map();
@@ -654,6 +742,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -661,22 +750,30 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
-        type User implements Node @key(fields: "userId") {
-          id: ID!
-          userId: String!
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
         type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
           todoId: Int!
+        }
+
+        type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
+          id: ID!
+          userId: String!
         }
       `
     );
@@ -717,6 +814,7 @@ describe('FroidSchema class', () => {
     const actual = generateSchema({
       subgraphs,
       froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
     });
 
     expect(actual).toEqual(
@@ -724,35 +822,147 @@ describe('FroidSchema class', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        type Todo implements Node @key(fields: "customField todoId") {
+          "The globally unique identifier."
+          id: ID!
+          customField: UsedCustomScalar1
+          todoId: Int!
+        }
+
         scalar UsedCustomScalar1
 
         scalar UsedCustomScalar2
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
+        type User implements Node @key(fields: "customField1 customField2 userId") {
+          "The globally unique identifier."
           id: ID!
-        }
-
-        type User implements Node @key(fields: "userId customField1 customField2") {
-          id: ID!
-          userId: String!
           customField1: UsedCustomScalar1
           customField2: [UsedCustomScalar2!]!
-        }
-
-        type Todo implements Node @key(fields: "todoId customField") {
-          id: ID!
-          todoId: Int!
-          customField: UsedCustomScalar1
+          userId: String!
         }
       `
     );
   });
 
-  describe('when using contacts with @tag', () => {
+  it('only includes descriptions for schema owned by the FROID subgraph', () => {
+    const userSchema = gql`
+      "Scalar description"
+      scalar UsedCustomScalar1
+
+      """
+      Another scalar description
+      """
+      scalar UsedCustomScalar2
+
+      scalar UnusedCustomScalar
+
+      type Query {
+        user(id: String): User
+      }
+
+      "User description"
+      type User @key(fields: "userId address { postalCode }") {
+        "userId description"
+        userId: String!
+        "Name description"
+        name: String!
+        "Unused field description"
+        unusedField: UnusedCustomScalar
+        "Address field description"
+        address: Address!
+      }
+
+      """
+      Address type description
+      """
+      type Address {
+        "postalCode field description"
+        postalCode: String!
+      }
+    `;
+
+    const todoSchema = gql`
+      scalar UsedCustomScalar1
+
+      """
+      Todo type description
+      """
+      type Todo @key(fields: "todoId customField") {
+        "todoId field description"
+        todoId: Int!
+        text: String!
+        complete: Boolean!
+        customField: UsedCustomScalar1
+      }
+    `;
+
+    const subgraphs = new Map();
+    subgraphs.set('user-subgraph', userSchema);
+    subgraphs.set('todo-subgraph', todoSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+        type Address {
+          postalCode: String!
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        type Todo implements Node @key(fields: "customField todoId") {
+          "The globally unique identifier."
+          id: ID!
+          customField: UsedCustomScalar1
+          todoId: Int!
+        }
+
+        scalar UsedCustomScalar1
+
+        type User implements Node @key(fields: "address { __typename postalCode } userId") {
+          "The globally unique identifier."
+          id: ID!
+          address: Address!
+          userId: String!
+        }
+      `
+    );
+  });
+
+  describe('when using contracts with @tag', () => {
     it('propogates valid tags to all core relay object identification types', () => {
       const productSchema = gql`
         type Query {
@@ -773,6 +983,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'supplier'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -780,23 +991,30 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
             id: ID!
           }
 
           type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
             id: ID!
             upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
           }
         `
       );
     });
 
-    it('uses the first non-id key directive despite contract tags', () => {
+    it('uses the first entity key, regardless of tagging or accessibility, and accurately tags the id field', () => {
       const productSchema = gql`
         type Query {
           topProducts(first: Int = 5): [Product]
@@ -816,6 +1034,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'supplier'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -823,23 +1042,30 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
             id: ID!
           }
 
           type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
             id: ID! @tag(name: "storefront")
             upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
           }
         `
       );
     });
 
-    it('propogates tags to the id field based on tags of sibling fields across subgraphs', () => {
+    it('propagates tags to the id field based on tags of sibling fields across subgraphs', () => {
       const productSchema = gql`
         type Query {
           user(id: String): User
@@ -889,6 +1115,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'supplier'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -896,35 +1123,46 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
-          interface Node @tag(name: "storefront") @tag(name: "supplier") {
-            id: ID!
-          }
-
-          type Product implements Node @key(fields: "upc") {
-            id: ID! @tag(name: "internal") @tag(name: "storefront")
-            upc: String!
-          }
-
           type Brand implements Node @key(fields: "brandId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal") @tag(name: "storefront")
             brandId: Int!
           }
 
-          type StorefrontUser implements Node @key(fields: "userId") {
-            id: ID! @tag(name: "internal") @tag(name: "storefront")
-            userId: String!
-          }
-
           type InternalUser implements Node @key(fields: "userId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal")
             userId: String!
           }
 
+          "The global identification interface implemented by all entities."
+          interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
+            id: ID! @tag(name: "internal") @tag(name: "storefront")
+            upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
+          }
+
+          type StorefrontUser implements Node @key(fields: "userId") {
+            "The globally unique identifier."
+            id: ID! @tag(name: "internal") @tag(name: "storefront")
+            userId: String!
+          }
+
           type Todo implements Node @key(fields: "todoId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal")
             todoId: Int!
           }
@@ -979,6 +1217,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'internal'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -986,37 +1225,45 @@ describe('FroidSchema class', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        type Todo implements Node @key(fields: "customField todoId") {
+          "The globally unique identifier."
+          id: ID!
+          customField: UsedCustomScalar1
+          todoId: Int!
+        }
+
         scalar UsedCustomScalar1
 
         scalar UsedCustomScalar2
 
         enum UsedEnum {
           VALUE_ONE
-          VALUE_TWO @inaccessible
           VALUE_THREE
+          VALUE_TWO @inaccessible
         }
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
+        type User implements Node @key(fields: "customEnum1 customEnum2 customField1 customField2 userId") {
+          "The globally unique identifier."
           id: ID!
-        }
-
-        type User implements Node @key(fields: "userId customField1 customField2 customEnum1 customEnum2") {
-          id: ID!
-          userId: String!
-          customField1: UsedCustomScalar1
-          customField2: [UsedCustomScalar2!]!
           customEnum1: UsedEnum
           customEnum2: [UsedEnum!]!
-        }
-
-        type Todo implements Node @key(fields: "todoId customField") {
-          id: ID!
-          todoId: Int!
-          customField: UsedCustomScalar1
+          customField1: UsedCustomScalar1
+          customField2: [UsedCustomScalar2!]!
+          userId: String!
         }
       `
       );
@@ -1048,6 +1295,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'internal'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1055,20 +1303,28 @@ describe('FroidSchema class', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
         type TypeA implements Node @key(fields: "selections { __typename selectionId }") {
+          "The globally unique identifier."
           id: ID! @tag(name: "storefront")
           selections: [TypeB!]
         }
 
         type TypeB implements Node @key(fields: "selectionId") {
+          "The globally unique identifier."
           id: ID! @tag(name: "storefront")
           selectionId: String!
         }
@@ -1078,7 +1334,7 @@ describe('FroidSchema class', () => {
   });
 
   describe('when generating schema for complex keys', () => {
-    it('uses a custom key sorter to prefer complex keys', () => {
+    it('uses a custom key sorter to prefer the first complex key', () => {
       const productSchema = gql`
         type Query {
           topProducts(first: Int = 5): [Product]
@@ -1086,9 +1342,9 @@ describe('FroidSchema class', () => {
 
         type Product
           @key(fields: "upc sku")
-          @key(fields: "upc sku brand { brandId store { storeId } }")
-          @key(fields: "upc")
-          @key(fields: "sku brand { brandId store { storeId } }") {
+          @key(fields: "brand { brandId store { storeId } }")
+          @key(fields: "price")
+          @key(fields: "brand { name }") {
           upc: String!
           sku: String!
           name: String
@@ -1100,6 +1356,7 @@ describe('FroidSchema class', () => {
         type Brand {
           brandId: Int!
           store: Store
+          name: String!
         }
 
         type Store {
@@ -1117,6 +1374,7 @@ describe('FroidSchema class', () => {
             return b.depth - a.depth;
           });
         },
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1124,24 +1382,29 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node
-          }
-
-          interface Node {
-            id: ID!
-          }
-
-          type Product implements Node @key(fields: "upc sku brand { __typename brandId store { __typename storeId } }") {
-            id: ID!
-            upc: String!
-            sku: String!
-            brand: [Brand!]!
-          }
-
           type Brand {
             brandId: Int!
             store: Store
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "brand { __typename brandId store { __typename storeId } }") {
+            "The globally unique identifier."
+            id: ID!
+            brand: [Brand!]!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
           }
 
           type Store {
@@ -1186,6 +1449,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         keySorter: (keys) => keys,
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1193,17 +1457,24 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node {
+            "The globally unique identifier."
             id: ID!
           }
 
           type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
             id: ID!
             upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
           }
         `
       );
@@ -1254,6 +1525,7 @@ describe('FroidSchema class', () => {
           }
           return keys;
         },
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1261,28 +1533,36 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node
-          }
-
-          interface Node {
-            id: ID!
-          }
-
-          type Product implements Node @key(fields: "upc sku") {
-            id: ID!
-            upc: String!
-            sku: String!
-          }
-
-          type Book implements Node @key(fields: "bookId author { __typename authorId }") {
-            id: ID!
-            bookId: String!
-            author: Author!
-          }
-
           type Author {
             authorId: String!
+          }
+
+          type Book implements Node @key(fields: "author { __typename authorId } bookId") {
+            "The globally unique identifier."
+            id: ID!
+            author: Author!
+            bookId: String!
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "sku upc") {
+            "The globally unique identifier."
+            id: ID!
+            sku: String!
+            upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
           }
         `
       );
@@ -1320,6 +1600,7 @@ describe('FroidSchema class', () => {
       const actual = generateSchema({
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1327,24 +1608,31 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node
-          }
-
-          interface Node {
-            id: ID!
-          }
-
-          type Product implements Node @key(fields: "upc sku brand { __typename brandId store { __typename storeId } }") {
-            id: ID!
-            upc: String!
-            sku: String!
-            brand: [Brand!]!
-          }
-
           type Brand {
             brandId: Int!
             store: Store
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "brand { __typename brandId store { __typename storeId } } sku upc") {
+            "The globally unique identifier."
+            id: ID!
+            brand: [Brand!]!
+            sku: String!
+            upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
           }
 
           type Store {
@@ -1374,6 +1662,7 @@ describe('FroidSchema class', () => {
       const actual = generateSchema({
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1381,18 +1670,25 @@ describe('FroidSchema class', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-          type Query {
-            node(id: ID!): Node
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node {
+            "The globally unique identifier."
             id: ID!
           }
 
-          type Product implements Node @key(fields: "upc sku") {
+          type Product implements Node @key(fields: "sku upc") {
+            "The globally unique identifier."
             id: ID!
-            upc: String!
             sku: String!
+            upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
           }
         `
       );
@@ -1457,6 +1753,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'internal'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1464,40 +1761,49 @@ describe('FroidSchema class', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        type Address {
+          country: String!
+          postalCode: String!
         }
 
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
+        type Author implements Node @key(fields: "authorId") {
+          "The globally unique identifier."
           id: ID!
+          address: Address! @external
+          authorId: Int!
+          fullName: String! @external
+        }
+
+        type Book implements Node @key(fields: "author { __typename address { __typename postalCode } authorId fullName } bookId") {
+          "The globally unique identifier."
+          id: ID!
+          author: Author!
+          bookId: String!
         }
 
         type Magazine implements Node @key(fields: "magazineId publisher { __typename address { __typename country } }") {
+          "The globally unique identifier."
           id: ID!
           magazineId: String!
           publisher: Publisher!
         }
 
-        type Book implements Node @key(fields: "bookId author { __typename fullName address { __typename postalCode } authorId }") {
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
           id: ID!
-          bookId: String!
-          author: Author!
-        }
-
-        type Author implements Node @key(fields: "authorId") {
-          id: ID!
-          authorId: Int!
-          fullName: String! @external
-          address: Address! @external
         }
 
         type Publisher {
           address: Address!
         }
 
-        type Address {
-          country: String!
-          postalCode: String!
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
         }
       `
       );
@@ -1530,6 +1836,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'internal'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1537,23 +1844,31 @@ describe('FroidSchema class', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
+        type Author implements Node @key(fields: "authorId") {
+          "The globally unique identifier."
           id: ID!
+          authorId: Int!
+          name: String! @external
         }
 
-        type Book implements Node @key(fields: "author { __typename name authorId }") {
+        type Book implements Node @key(fields: "author { __typename authorId name }") {
+          "The globally unique identifier."
           id: ID!
           author: Author!
         }
 
-        type Author implements Node @key(fields: "authorId") {
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
           id: ID!
-          authorId: Int!
-          name: String! @external
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
         }
       `
       );
@@ -1586,6 +1901,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'internal'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1593,25 +1909,175 @@ describe('FroidSchema class', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
-          id: ID!
-        }
-
-        type Book implements Node @key(fields: "author { __typename name authorId }") {
-          id: ID!
-          author: Author!
-        }
-
         type Author implements Node @key(fields: "authorId") {
+          "The globally unique identifier."
           id: ID!
           authorId: Int!
           name: String! @external
         }
+
+        type Book implements Node @key(fields: "author { __typename authorId name }") {
+          "The globally unique identifier."
+          id: ID!
+          author: Author!
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
       `
+      );
+    });
+
+    it('uses a custom qualifier to prefer fields', () => {
+      const bookSchema = gql`
+        type Book @key(fields: "isbn") {
+          isbn: String!
+          title: String
+        }
+      `;
+      const authorSchema = gql`
+        type Book @key(fields: "isbn") {
+          isbn: String!
+          title: String!
+        }
+
+        type Author @key(fields: "book { title }") {
+          book: Book!
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('book-subgraph', bookSchema);
+      subgraphs.set('author-subgraph', authorSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        federationVersion: FED2_DEFAULT_VERSION,
+        nodeQualifier: (node) => {
+          if (
+            node.kind === Kind.FIELD_DEFINITION &&
+            node.type.kind !== Kind.NON_NULL_TYPE
+          ) {
+            return false;
+          }
+          return true;
+        },
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+          type Author implements Node @key(fields: "book { __typename isbn title }") {
+            "The globally unique identifier."
+            id: ID!
+            book: Book!
+          }
+
+          type Book implements Node @key(fields: "isbn") {
+            "The globally unique identifier."
+            id: ID!
+            isbn: String!
+            title: String! @external
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
+          }
+        `
+      );
+    });
+
+    it('falls back to picking the first found field if the provided custom qualifier fails to find a field', () => {
+      const bookSchema = gql`
+        type Book @key(fields: "isbn") {
+          isbn: String!
+          title: String
+        }
+      `;
+      const authorSchema = gql`
+        type Book @key(fields: "isbn") {
+          isbn: String!
+          title: [String]
+        }
+
+        type Author @key(fields: "book { title }") {
+          book: Book!
+        }
+      `;
+      const subgraphs = new Map();
+      subgraphs.set('book-subgraph', bookSchema);
+      subgraphs.set('author-subgraph', authorSchema);
+
+      const actual = generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        federationVersion: FED2_DEFAULT_VERSION,
+        nodeQualifier: (node) => {
+          if (
+            node.kind === Kind.FIELD_DEFINITION &&
+            node.type.kind !== Kind.NON_NULL_TYPE
+          ) {
+            return false;
+          }
+          return true;
+        },
+      });
+
+      expect(actual).toEqual(
+        // prettier-ignore
+        gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+          type Author implements Node @key(fields: "book { __typename isbn title }") {
+            "The globally unique identifier."
+            id: ID!
+            book: Book!
+          }
+
+          type Book implements Node @key(fields: "isbn") {
+            "The globally unique identifier."
+            id: ID!
+            isbn: String!
+            title: String @external
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
+          }
+        `
       );
     });
 
@@ -1635,6 +2101,7 @@ describe('FroidSchema class', () => {
         subgraphs,
         froidSubgraphName: 'relay-subgraph',
         contractTags: ['storefront', 'internal'],
+        federationVersion: FED2_DEFAULT_VERSION,
       });
 
       expect(actual).toEqual(
@@ -1642,24 +2109,32 @@ describe('FroidSchema class', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
+        type Author implements Node @key(fields: "book { __typename author { __typename name } title }") {
+          "The globally unique identifier."
           id: ID!
+          book: Book!
+          name: String! @external
         }
 
-        type Book implements Node @key(fields: "author { __typename name book { __typename title } }") {
+        type Book implements Node @key(fields: "author { __typename book { __typename title } name }") {
+          "The globally unique identifier."
           id: ID!
           author: Author!
           title: String! @external
         }
 
-        type Author implements Node @key(fields: "book { __typename title author { __typename name } }") {
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
           id: ID!
-          book: Book!
-          name: String! @external
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
         }
       `
       );
@@ -1678,7 +2153,12 @@ describe('FroidSchema class', () => {
       subgraphs.set('product-subgraph', productSchema);
 
       try {
-        const froid = new FroidSchema('relay-subgraph', subgraphs, {});
+        const froid = new FroidSchema(
+          'relay-subgraph',
+          FED2_DEFAULT_VERSION,
+          subgraphs,
+          {}
+        );
         // @ts-ignore
         froid.createLinkSchemaExtension([]);
       } catch (error) {

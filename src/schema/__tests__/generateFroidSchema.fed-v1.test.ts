@@ -77,6 +77,7 @@ describe('generateFroidSchema for federation v1', () => {
       }
 
       type Brand @key(fields: "id") {
+        "The globally unique identifier."
         id: ID!
         name: String
       }
@@ -92,20 +93,27 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         extend type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String! @external
         }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -132,20 +140,27 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         extend type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String! @external
         }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -175,21 +190,28 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         extend type Product implements Node @key(fields: "upc sku") {
+          "The globally unique identifier."
           id: ID!
-          upc: String! @external
           sku: String! @external
+          upc: String! @external
         }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -233,21 +255,28 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         extend type Product implements Node @key(fields: "upc sku") {
+          "The globally unique identifier."
           id: ID!
-          upc: String! @external
           sku: String! @external
+          upc: String! @external
         }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -287,31 +316,38 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        extend type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
-          id: ID!
-          upc: String! @external
-          sku: String! @external
-          brand: [Brand!]! @external
-        }
-
         type Brand {
           brandId: Int!
           store: Store
         }
 
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        extend type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
+          "The globally unique identifier."
+          id: ID!
+          brand: [Brand!]! @external
+          sku: String! @external
+          upc: String! @external
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
         type Store {
           storeId: Int!
         }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -358,31 +394,38 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        extend type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
-          id: ID!
-          upc: String! @external
-          sku: String! @external
-          brand: [Brand!]! @external
-        }
-
         type Brand {
           brandId: Int!
           store: Store
         }
 
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        extend type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
+          "The globally unique identifier."
+          id: ID!
+          brand: [Brand!]! @external
+          sku: String! @external
+          upc: String! @external
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
         type Store {
           storeId: Int!
         }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -427,20 +470,27 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         extend type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String! @external
         }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -495,31 +545,39 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
+        type Author {
+          authorId: String!
         }
 
+        extend type Book implements Node @key(fields: "bookId author { authorId }") {
+          "The globally unique identifier."
+          id: ID!
+          author: Author! @external
+          bookId: String! @external
+        }
+
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         extend type Product implements Node @key(fields: "upc sku") {
+          "The globally unique identifier."
           id: ID!
-          upc: String! @external
           sku: String! @external
+          upc: String! @external
         }
 
-        extend type Book implements Node @key(fields: "bookId author { authorId }") {
-          id: ID!
-          bookId: String! @external
-          author: Author! @external
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
-        type Author {
-          authorId: String!
-        }
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -601,24 +659,33 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
-        type Query {
-          node(id: ID!): Node
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
         }
 
-        interface Node {
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
+        extend type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
+          todoId: Int! @external
         }
 
         extend type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String! @external
-        }
-
-        extend type Todo implements Node @key(fields: "todoId") {
-          id: ID!
-          todoId: Int! @external
         }
       `
     );
@@ -661,27 +728,35 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
         extend type Brand implements Node @key(fields: "brandId") {
+          "The globally unique identifier."
           id: ID!
           brandId: Int! @external
         }
 
-        extend type Product implements Node @key(fields: "upc sku brand { brandId }") {
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
           id: ID!
-          upc: String! @external
-          sku: String! @external
-          brand: [Brand!]! @external
         }
+
+        extend type Product implements Node @key(fields: "upc sku brand { brandId }") {
+          "The globally unique identifier."
+          id: ID!
+          brand: [Brand!]! @external
+          sku: String! @external
+          upc: String! @external
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
     );
   });
@@ -718,17 +793,24 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
         extend type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String! @external
         }
@@ -777,22 +859,30 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
         extend type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
           todoId: Int! @external
         }
 
         extend type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String! @external
         }
@@ -821,27 +911,33 @@ describe('generateFroidSchema for federation v1', () => {
     const relaySchema = gql`
       directive @tag(
         name: String!
-      ) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+      ) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
 
       type Query {
-        node(id: ID!): Node
+        "Fetches an entity by its globally unique identifier."
+        node("A globally unique entity identifier." id: ID!): Node
       }
 
+      "The global identification interface implemented by all entities."
       interface Node {
+        "The globally unique identifier."
         id: ID!
       }
 
       extend type User implements Node @key(fields: "userId") {
+        "The globally unique identifier."
         id: ID!
         userId: String! @external
       }
 
       extend type Todo implements Node @key(fields: "todoId") {
+        "The globally unique identifier."
         id: ID!
         todoId: Int! @external
       }
 
       extend type AnotherType implements Node @key(fields: "someId") {
+        "The globally unique identifier."
         id: ID!
         someId: Int! @external
       }
@@ -859,24 +955,32 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
         }
 
-        interface Node {
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
+        extend type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
+          todoId: Int! @external
         }
 
         extend type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String! @external
-        }
-
-        extend type Todo implements Node @key(fields: "todoId") {
-          id: ID!
-          todoId: Int! @external
         }
       `
     );
@@ -922,31 +1026,39 @@ describe('generateFroidSchema for federation v1', () => {
     expect(actual).toEqual(
       // prettier-ignore
       gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
+        extend type Todo implements Node @key(fields: "todoId customField") {
+          "The globally unique identifier."
+          id: ID!
+          customField: UsedCustomScalar1 @external
+          todoId: Int! @external
+        }
 
         scalar UsedCustomScalar1
 
         scalar UsedCustomScalar2
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
         extend type User implements Node @key(fields: "userId customField1 customField2") {
+          "The globally unique identifier."
           id: ID!
-          userId: String! @external
           customField1: UsedCustomScalar1 @external
           customField2: [UsedCustomScalar2!]! @external
-        }
-
-        extend type Todo implements Node @key(fields: "todoId customField") {
-          id: ID!
-          todoId: Int! @external
-          customField: UsedCustomScalar1 @external
+          userId: String! @external
         }
       `
     );
@@ -978,20 +1090,27 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
             id: ID!
           }
 
           extend type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
             id: ID!
             upc: String! @external
           }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
+          }
+
+          directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
         `
       );
     });
@@ -1021,20 +1140,27 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
             id: ID!
           }
 
           extend type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
             id: ID! @tag(name: "storefront")
             upc: String! @external
           }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
+          }
+
+          directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
         `
       );
     });
@@ -1094,37 +1220,48 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-          directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
-          interface Node @tag(name: "storefront") @tag(name: "supplier") {
-            id: ID!
-          }
-
-          extend type Product implements Node @key(fields: "upc") {
-            id: ID! @tag(name: "internal") @tag(name: "storefront")
-            upc: String! @external
-          }
-
           extend type Brand implements Node @key(fields: "brandId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal") @tag(name: "storefront")
             brandId: Int! @external
           }
 
-          extend type StorefrontUser implements Node @key(fields: "userId") {
-            id: ID! @tag(name: "internal") @tag(name: "storefront")
-            userId: String! @external
-          }
-
           extend type InternalUser implements Node @key(fields: "userId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal")
             userId: String! @external
           }
 
+          "The global identification interface implemented by all entities."
+          interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          extend type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
+            id: ID! @tag(name: "internal") @tag(name: "storefront")
+            upc: String! @external
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
+          }
+
+          extend type StorefrontUser implements Node @key(fields: "userId") {
+            "The globally unique identifier."
+            id: ID! @tag(name: "internal") @tag(name: "storefront")
+            userId: String! @external
+          }
+
+          directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
           extend type Todo implements Node @key(fields: "todoId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal")
             todoId: Int! @external
           }
@@ -1179,7 +1316,28 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
+        extend type Todo implements Node @key(fields: "todoId customField") {
+          "The globally unique identifier."
+          id: ID!
+          customField: UsedCustomScalar1 @external
+          todoId: Int! @external
+        }
 
         scalar UsedCustomScalar1
 
@@ -1190,26 +1348,13 @@ describe('generateFroidSchema for federation v1', () => {
           VALUE_TWO
         }
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
-          id: ID!
-        }
-
         extend type User implements Node @key(fields: "userId customField1 customField2 customEnum") {
+          "The globally unique identifier."
           id: ID!
-          userId: String! @external
+          customEnum: UsedEnum @external
           customField1: UsedCustomScalar1 @external
           customField2: [UsedCustomScalar2!]! @external
-          customEnum: UsedEnum @external
-        }
-
-        extend type Todo implements Node @key(fields: "todoId customField") {
-          id: ID!
-          todoId: Int! @external
-          customField: UsedCustomScalar1 @external
+          userId: String! @external
         }
       `
       );
@@ -1246,22 +1391,30 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+
         extend type TypeA implements Node @key(fields: "selections { selectionId }") {
+          "The globally unique identifier."
           id: ID! @tag(name: "storefront")
           selections: [TypeB!] @external
         }
 
         extend type TypeB implements Node @key(fields: "selectionId") {
+          "The globally unique identifier."
           id: ID! @tag(name: "storefront")
           selectionId: String! @external
         }
@@ -1335,43 +1488,52 @@ describe('generateFroidSchema for federation v1', () => {
       expect(actual).toEqual(
         // prettier-ignore
         gql`
-        directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
-
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        type Address {
+          country: String!
+          postalCode: String!
         }
 
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
+        extend type Author implements Node @key(fields: "authorId") {
+          "The globally unique identifier."
           id: ID!
+          address: Address! @external
+          authorId: Int! @external
+          fullName: String! @external
+        }
+
+        extend type Book implements Node @key(fields: "bookId author { fullName address { postalCode } }") {
+          "The globally unique identifier."
+          id: ID!
+          author: Author! @external
+          bookId: String! @external
         }
 
         extend type Magazine implements Node @key(fields: "magazineId publisher { address { country } }") {
+          "The globally unique identifier."
           id: ID!
           magazineId: String! @external
           publisher: Publisher! @external
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
         }
 
         type Publisher {
           address: Address!
         }
 
-        type Address {
-          country: String!
-          postalCode: String!
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
         }
 
-        extend type Book implements Node @key(fields: "bookId author { fullName address { postalCode } }") {
-          id: ID!
-          bookId: String! @external
-          author: Author! @external
-        }
-
-        extend type Author implements Node @key(fields: "authorId") {
-          id: ID!
-          fullName: String! @external
-          address: Address! @external
-          authorId: Int! @external
-        }
+        directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
       `
       );
     });

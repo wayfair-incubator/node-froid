@@ -15,6 +15,10 @@ export function createNodeInterface(
 ): InterfaceTypeDefinitionNode {
   return {
     kind: Kind.INTERFACE_TYPE_DEFINITION,
+    description: {
+      kind: Kind.STRING,
+      value: 'The global identification interface implemented by all entities.',
+    },
     name: {
       kind: Kind.NAME,
       value: 'Node',

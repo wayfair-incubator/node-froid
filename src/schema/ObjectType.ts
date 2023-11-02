@@ -2,7 +2,7 @@ import {FieldDefinitionNode, ObjectTypeDefinitionNode} from 'graphql';
 import {Key} from './Key';
 import {DirectiveName} from './constants';
 import {ObjectTypeNode} from './types';
-import {FroidSchema, KeySorter} from './FroidSchema';
+import {FroidSchema, KeySorter, NodeQualifier} from './FroidSchema';
 import {KeyField} from './KeyField';
 
 const FINAL_KEY_MAX_DEPTH = 100;
@@ -21,13 +21,15 @@ export class ObjectType {
    * @param {ObjectTypeDefinitionNode[]} objectTypes - The object type definitions from across the source schemas
    * @param {ObjectTypeNode[]} extensionAndDefinitionNodes - The object type definition and extension nodes from across the source schemas
    * @param {KeySorter} keySorter - A function for sorting object keys prior to selection
+   * @param {NodeQualifier} nodeQualifier - A function for qualifying whether a node should be used for populating the FROID schema or not
    */
   constructor(
     public readonly node: ObjectTypeDefinitionNode,
     private readonly froidObjectTypes: Record<string, ObjectType>,
     private readonly objectTypes: ObjectTypeDefinitionNode[],
     private readonly extensionAndDefinitionNodes: ObjectTypeNode[],
-    private readonly keySorter: KeySorter
+    private readonly keySorter: KeySorter,
+    private readonly nodeQualifier: NodeQualifier
   ) {
     this.typename = this.node.name.value;
   }
@@ -63,19 +65,45 @@ export class ObjectType {
    * @returns {FieldDefinitionNode[]} The list of fields
    */
   public get allFields(): FieldDefinitionNode[] {
-    const fields: FieldDefinitionNode[] = [];
+    const fields: Record<string, FieldDefinitionNode | null> = {};
     this.occurrences.forEach((occurrence) =>
       occurrence?.fields?.forEach((field) => {
-        if (
-          fields.every(
-            (compareField) => compareField.name.value !== field.name.value
-          )
-        ) {
-          fields.push(field);
-        }
+        fields[field.name.value] = null;
+        this.addQualifiedField(field, fields);
       })
     );
-    return fields;
+    Object.entries(fields)
+      .filter(([, field]) => field === null)
+      .forEach(([fieldName]) => {
+        this.occurrences.some((occurrence) => {
+          occurrence?.fields?.forEach((field) => {
+            if (field.name.value !== fieldName) {
+              return false;
+            }
+            this.addQualifiedField(field, fields, false);
+            return true;
+          });
+        });
+      });
+    return Object.values(fields).filter(Boolean) as FieldDefinitionNode[];
+  }
+
+  private addQualifiedField(
+    field: FieldDefinitionNode,
+    fields: Record<string, FieldDefinitionNode | null>,
+    applyNodeQualifier = true
+  ): FieldDefinitionNode | undefined {
+    if (
+      fields[field.name.value] !== null ||
+      (applyNodeQualifier && !this.nodeQualifier(field, this.objectTypes))
+    ) {
+      // If the field is already in the list
+      // of if the field must pass the node qualifier and fails to
+      // don't add it again
+      return;
+    }
+    // Add the node
+    fields[field.name.value] = field;
   }
 
   /**
