@@ -145,7 +145,9 @@ export class ObjectType {
     const fields: Record<string, FieldDefinitionNode | null> = {};
     this.occurrences.forEach((occurrence) =>
       occurrence?.fields?.forEach((field) => {
-        fields[field.name.value] = null;
+        if (!fields[field.name.value]) {
+          fields[field.name.value] = null;
+        }
         this.addQualifiedField(field, fields);
       })
     );

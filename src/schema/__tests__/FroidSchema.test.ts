@@ -1943,22 +1943,29 @@ describe('FroidSchema class', () => {
       const bookSchema = gql`
         type Book @key(fields: "isbn") {
           isbn: String!
-          title: String
+          title: String!
         }
       `;
       const authorSchema = gql`
         type Book @key(fields: "isbn") {
           isbn: String!
-          title: String!
+          title: String
         }
 
         type Author @key(fields: "book { title }") {
           book: Book!
         }
       `;
+      const reviewSchema = gql`
+        type Book @key(fields: "isbn") {
+          isbn: String!
+          title: String!
+        }
+      `;
       const subgraphs = new Map();
       subgraphs.set('book-subgraph', bookSchema);
       subgraphs.set('author-subgraph', authorSchema);
+      subgraphs.set('review-subgraph', reviewSchema);
 
       const actual = generateSchema({
         subgraphs,
@@ -1967,7 +1974,7 @@ describe('FroidSchema class', () => {
         nodeQualifier: (node) => {
           if (
             node.kind === Kind.FIELD_DEFINITION &&
-            node.type.kind !== Kind.NON_NULL_TYPE
+            node.type.kind === Kind.NON_NULL_TYPE
           ) {
             return false;
           }
@@ -1990,7 +1997,7 @@ describe('FroidSchema class', () => {
             "The globally unique identifier."
             id: ID!
             isbn: String!
-            title: String! @external
+            title: String @external
           }
 
           "The global identification interface implemented by all entities."
