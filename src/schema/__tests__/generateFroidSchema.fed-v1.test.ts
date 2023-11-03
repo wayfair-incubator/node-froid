@@ -196,7 +196,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
         }
 
-        extend type Product implements Node @key(fields: "upc sku") {
+        extend type Product implements Node @key(fields: "sku upc") {
           "The globally unique identifier."
           id: ID!
           sku: String! @external
@@ -261,7 +261,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
         }
 
-        extend type Product implements Node @key(fields: "upc sku") {
+        extend type Product implements Node @key(fields: "sku upc") {
           "The globally unique identifier."
           id: ID!
           sku: String! @external
@@ -327,7 +327,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
         }
 
-        extend type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
+        extend type Product implements Node @key(fields: "brand { brandId store { storeId } } sku upc") {
           "The globally unique identifier."
           id: ID!
           brand: [Brand!]! @external
@@ -405,7 +405,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
         }
 
-        extend type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
+        extend type Product implements Node @key(fields: "brand { brandId store { storeId } } sku upc") {
           "The globally unique identifier."
           id: ID!
           brand: [Brand!]! @external
@@ -549,7 +549,7 @@ describe('generateFroidSchema for federation v1', () => {
           authorId: String!
         }
 
-        extend type Book implements Node @key(fields: "bookId author { authorId }") {
+        extend type Book implements Node @key(fields: "author { authorId } bookId") {
           "The globally unique identifier."
           id: ID!
           author: Author! @external
@@ -562,7 +562,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
         }
 
-        extend type Product implements Node @key(fields: "upc sku") {
+        extend type Product implements Node @key(fields: "sku upc") {
           "The globally unique identifier."
           id: ID!
           sku: String! @external
@@ -740,7 +740,7 @@ describe('generateFroidSchema for federation v1', () => {
           id: ID!
         }
 
-        extend type Product implements Node @key(fields: "upc sku brand { brandId }") {
+        extend type Product implements Node @key(fields: "brand { brandId } sku upc") {
           "The globally unique identifier."
           id: ID!
           brand: [Brand!]! @external
@@ -1042,7 +1042,7 @@ describe('generateFroidSchema for federation v1', () => {
 
         directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
 
-        extend type Todo implements Node @key(fields: "todoId customField") {
+        extend type Todo implements Node @key(fields: "customField todoId") {
           "The globally unique identifier."
           id: ID!
           customField: UsedCustomScalar1 @external
@@ -1053,7 +1053,7 @@ describe('generateFroidSchema for federation v1', () => {
 
         scalar UsedCustomScalar2
 
-        extend type User implements Node @key(fields: "userId customField1 customField2") {
+        extend type User implements Node @key(fields: "customField1 customField2 userId") {
           "The globally unique identifier."
           id: ID!
           customField1: UsedCustomScalar1 @external
@@ -1332,7 +1332,7 @@ describe('generateFroidSchema for federation v1', () => {
 
         directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
 
-        extend type Todo implements Node @key(fields: "todoId customField") {
+        extend type Todo implements Node @key(fields: "customField todoId") {
           "The globally unique identifier."
           id: ID!
           customField: UsedCustomScalar1 @external
@@ -1348,7 +1348,7 @@ describe('generateFroidSchema for federation v1', () => {
           VALUE_TWO
         }
 
-        extend type User implements Node @key(fields: "userId customField1 customField2 customEnum") {
+        extend type User implements Node @key(fields: "customEnum customField1 customField2 userId") {
           "The globally unique identifier."
           id: ID!
           customEnum: UsedEnum @external
@@ -1501,7 +1501,7 @@ describe('generateFroidSchema for federation v1', () => {
           fullName: String! @external
         }
 
-        extend type Book implements Node @key(fields: "bookId author { fullName address { postalCode } }") {
+        extend type Book implements Node @key(fields: "author { address { postalCode } fullName } bookId") {
           "The globally unique identifier."
           id: ID!
           author: Author! @external

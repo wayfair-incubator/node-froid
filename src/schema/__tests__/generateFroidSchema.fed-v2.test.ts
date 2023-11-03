@@ -243,7 +243,7 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku") {
+        type Product implements Node @key(fields: "sku upc") {
           "The globally unique identifier."
           id: ID!
           sku: String!
@@ -308,7 +308,7 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku") {
+        type Product implements Node @key(fields: "sku upc") {
           "The globally unique identifier."
           id: ID!
           sku: String!
@@ -381,7 +381,7 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
+        type Product implements Node @key(fields: "brand { brandId store { storeId } } sku upc") {
           "The globally unique identifier."
           id: ID!
           brand: [Brand!]!
@@ -525,7 +525,7 @@ describe('generateFroidSchema for federation v2', () => {
           authorId: String!
         }
 
-        type Book implements Node @key(fields: "bookId author { authorId }") {
+        type Book implements Node @key(fields: "author { authorId } bookId") {
           "The globally unique identifier."
           id: ID!
           author: Author!
@@ -538,7 +538,7 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku") {
+        type Product implements Node @key(fields: "sku upc") {
           "The globally unique identifier."
           id: ID!
           sku: String!
@@ -606,7 +606,7 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
+        type Product implements Node @key(fields: "brand { brandId store { storeId } } sku upc") {
           "The globally unique identifier."
           id: ID!
           brand: [Brand!]!
@@ -788,7 +788,7 @@ describe('generateFroidSchema for federation v2', () => {
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku brand { brandId }") {
+        type Product implements Node @key(fields: "brand { brandId } sku upc") {
           "The globally unique identifier."
           id: ID!
           brand: [Brand!]!
@@ -1096,7 +1096,7 @@ describe('generateFroidSchema for federation v2', () => {
           ): Node
         }
 
-        type Todo implements Node @key(fields: "todoId customField") {
+        type Todo implements Node @key(fields: "customField todoId") {
           "The globally unique identifier."
           id: ID!
           customField: UsedCustomScalar1
@@ -1107,7 +1107,7 @@ describe('generateFroidSchema for federation v2', () => {
 
         scalar UsedCustomScalar2
 
-        type User implements Node @key(fields: "userId customField1 customField2") {
+        type User implements Node @key(fields: "customField1 customField2 userId") {
           "The globally unique identifier."
           id: ID!
           customField1: UsedCustomScalar1
@@ -1391,7 +1391,7 @@ describe('generateFroidSchema for federation v2', () => {
           ): Node @tag(name: "internal") @tag(name: "storefront")
         }
 
-        type Todo implements Node @key(fields: "todoId customField") {
+        type Todo implements Node @key(fields: "customField todoId") {
           "The globally unique identifier."
           id: ID!
           customField: UsedCustomScalar1
@@ -1408,7 +1408,7 @@ describe('generateFroidSchema for federation v2', () => {
           VALUE_TWO @inaccessible
         }
 
-        type User implements Node @key(fields: "userId customField1 customField2 customEnum1 customEnum2") {
+        type User implements Node @key(fields: "customEnum1 customEnum2 customField1 customField2 userId") {
           "The globally unique identifier."
           id: ID!
           customEnum1: UsedEnum
@@ -1564,7 +1564,7 @@ describe('generateFroidSchema for federation v2', () => {
           fullName: String!
         }
 
-        type Book implements Node @key(fields: "bookId author { fullName address { postalCode } }") {
+        type Book implements Node @key(fields: "author { address { postalCode } fullName } bookId") {
           "The globally unique identifier."
           id: ID!
           author: Author!

@@ -236,7 +236,7 @@ export class Key {
    * @param {string} fields - The selection set fields.
    * @returns {string} The sorted selection set fields.
    */
-  protected static getSortedSelectionSetFields(fields: string): string {
+  public static getSortedSelectionSetFields(fields: string): string {
     const selections = Key.sortSelectionSetByNameAscending(
       (Key.parseKeyFields(fields).definitions[0] as OperationDefinitionNode)
         .selectionSet

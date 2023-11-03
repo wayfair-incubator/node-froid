@@ -34,7 +34,7 @@ describe('sortDocumentAst()', () => {
         flavor: String!
       }
 
-      type Ape {
+      type Ape @key(fields: "name armLength") {
         name: String! @caps(match: "Bob", all: false)
         armLength: Float!
       }
@@ -53,7 +53,7 @@ describe('sortDocumentAst()', () => {
 
       union Animals = Ape | Zebra
 
-      type Ape {
+      type Ape @key(fields: "armLength name") {
         armLength: Float!
         name: String! @caps(all: false, match: "Bob")
       }
@@ -80,6 +80,94 @@ describe('sortDocumentAst()', () => {
       type Zebra {
         eyeColor: Color!
         stripesCount: Int!
+      }
+      `
+    );
+  });
+
+  it('sorts id fields to the top of the list', () => {
+    const schema = gql`
+      type Ape {
+        id: ID!
+        name: String!
+      }
+
+      type Gorilla {
+        name: String!
+        id: ID!
+      }
+    `;
+
+    expect(sort(schema)).toEqual(
+      // prettier-ignore
+      gql`
+      type Ape {
+        id: ID!
+        name: String!
+      }
+
+      type Gorilla {
+        id: ID!
+        name: String!
+      }
+      `
+    );
+  });
+
+  it('sorts applied directives alphabetically by name', () => {
+    const schema = gql`
+      type Ape {
+        name: String! @inaccessible @caps
+      }
+    `;
+
+    expect(sort(schema)).toEqual(
+      // prettier-ignore
+      gql`
+      type Ape {
+        name: String! @caps @inaccessible
+      }
+      `
+    );
+  });
+
+  it('sorts applied directive arguments alphabetically by name', () => {
+    const schema = gql`
+      type Ape {
+        name: String! @caps(match: "asdf", all: false)
+      }
+    `;
+
+    expect(sort(schema)).toEqual(
+      // prettier-ignore
+      gql`
+      type Ape {
+        name: String! @caps(all: false, match: "asdf")
+      }
+      `
+    );
+  });
+
+  it('sorts duplicate applied directives by their arguments', () => {
+    const schema = gql`
+      type Ape {
+        name: String!
+          @tag(name: 1)
+          @tag(name: "avengers")
+          @capitalize(all: true)
+          @tag(name: "justice-league")
+          @tag(name: {bob: "Barker"})
+          @capitalize(match: "ASDF", all: false)
+          @tag(size: "small")
+          @capitalize(all: false)
+      }
+    `;
+
+    expect(sort(schema)).toEqual(
+      // prettier-ignore
+      gql`
+      type Ape {
+        name: String! @capitalize(all: true) @capitalize(all: false) @capitalize(all: false, match: "ASDF") @tag(name: 1) @tag(name: "avengers") @tag(name: "justice-league") @tag(name: {bob: "Barker"}) @tag(size: "small")
       }
       `
     );
