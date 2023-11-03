@@ -47,7 +47,6 @@ export type NodeQualifier = (
 
 export type FroidSchemaOptions = {
   contractTags?: string[];
-  federationVersion?: string;
   keySorter?: KeySorter;
   nodeQualifier?: NodeQualifier;
   typeExceptions?: string[];
