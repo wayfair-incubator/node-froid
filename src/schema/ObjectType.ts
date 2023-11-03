@@ -12,11 +12,6 @@ const FINAL_KEY_MAX_DEPTH = 100;
  */
 export class ObjectType {
   /**
-   * Fields belonging to this object type that were selected for
-   * use in the keys of other object types.
-   */
-  private _externallySelectedFields: string[] = [];
-  /**
    * The name of the object type.
    */
   public readonly typename: string;
@@ -81,6 +76,11 @@ export class ObjectType {
    * ['authorId']
    */
   public readonly directlySelectedFields: string[];
+  /**
+   * Fields belonging to this object type that were selected for
+   * use in the keys of other object types.
+   */
+  private _externallySelectedFields: string[] = [];
 
   /**
    *
@@ -409,6 +409,11 @@ export class ObjectType {
    * @returns {void}
    */
   public addExternallySelectedFields(fields: KeyField[]): void {
-    this._externallySelectedFields.push(...fields.map((field) => field.name));
+    fields.forEach((field) => {
+      if (this._externallySelectedFields.includes(field.name)) {
+        return;
+      }
+      this._externallySelectedFields.push(field.name);
+    });
   }
 }
