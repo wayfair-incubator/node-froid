@@ -11,8 +11,76 @@ const FINAL_KEY_MAX_DEPTH = 100;
  * Collates information about an object type definition node.
  */
 export class ObjectType {
-  public readonly typename: string;
+  /**
+   * Fields belonging to this object type that were selected for
+   * use in the keys of other object types.
+   */
   private _externallySelectedFields: string[] = [];
+  /**
+   * The name of the object type.
+   */
+  public readonly typename: string;
+  /**
+   * All occurrences of the node across all subgraph schemas.
+   */
+  public readonly occurrences: ObjectTypeNode[];
+  /**
+   * All keys applied to all occurrences of the node.
+   */
+  public readonly keys: Key[];
+  /**
+   * All the child fields from all occurrences of the node as records.
+   */
+  public readonly allFieldRecords: Record<string, FieldDefinitionNode>;
+  /**
+   * All the child fields from all occurrences of the node as a list.
+   */
+  public readonly allFields: FieldDefinitionNode[];
+  /**
+   * The names of all the fields that appear in the keys of the node.
+   */
+  public readonly allKeyFieldsList: string[];
+  /**
+   * All the fields that appear in the keys of the node.
+   */
+  public readonly allKeyFields: FieldDefinitionNode[];
+  /**
+   * The key selected for use in the FROID schema.
+   */
+  public readonly selectedKey: Key | undefined;
+  /**
+   * The list of child objects that appear in the selected key.
+   * Each record is made up of the field referencing a child object
+   * and the object it is referencing.
+   *
+   * Example schema:
+   * type Book @key(fields: "theBookAuthor { name }") {
+   *   theBookAuthor: Author!
+   * }
+   * type Author {
+   *   name
+   * }
+   *
+   * Example record:
+   * { "theBookAuthor": "Author" }
+   */
+  public readonly childObjectsInSelectedKey: Record<string, string>;
+  /**
+   * The names of the fields that are being used by the node itself.
+   *
+   * Example schema:
+   * type Book @key(fields: "author { name }") {
+   *   author: Author!
+   * }
+   * type Author @key(fields: "authorId") {
+   *   authorId: Int!
+   *   name: String!
+   * }
+   *
+   * Example value:
+   * ['authorId']
+   */
+  public readonly directlySelectedFields: string[];
 
   /**
    *
@@ -32,25 +100,34 @@ export class ObjectType {
     private readonly nodeQualifier: NodeQualifier
   ) {
     this.typename = this.node.name.value;
+    this.occurrences = this.getOccurrences();
+    this.keys = this.getKeys();
+    this.allFieldRecords = this.getAllFieldRecords();
+    this.allFields = this.getAllFields();
+    this.allKeyFieldsList = this.getAllKeyFieldsList();
+    this.allKeyFields = this.getAllKeyFields();
+    this.selectedKey = this.getSelectedKey();
+    this.childObjectsInSelectedKey = this.getChildObjectsInSelectedKey();
+    this.directlySelectedFields = this.getDirectlySelectedFields();
   }
 
   /**
-   * All occurrences of the node across all subgraph schemas.
+   * Get all occurrences of the node across all subgraph schemas.
    *
    * @returns {ObjectTypeNode[]} The list of occurrences
    */
-  public get occurrences(): ObjectTypeNode[] {
+  private getOccurrences(): ObjectTypeNode[] {
     return this.extensionAndDefinitionNodes.filter(
       (searchNode) => searchNode.name.value === this.node.name.value
     );
   }
 
   /**
-   * All keys applied to all occurrences of the node.
+   * Get all keys applied to all occurrences of the node.
    *
    * @returns {Key[]} The list of keys
    */
-  public get keys(): Key[] {
+  private getKeys(): Key[] {
     return this.occurrences.flatMap(
       (occurrence) =>
         occurrence.directives
@@ -60,11 +137,11 @@ export class ObjectType {
   }
 
   /**
-   * All the child fields from all occurrences of the node.
+   * Get all the child fields from all occurrences of the node as records.
    *
-   * @returns {FieldDefinitionNode[]} The list of fields
+   * @returns {Record<string, FieldDefinitionNode>} The of field records
    */
-  public get allFields(): FieldDefinitionNode[] {
+  private getAllFieldRecords(): Record<string, FieldDefinitionNode> {
     const fields: Record<string, FieldDefinitionNode | null> = {};
     this.occurrences.forEach((occurrence) =>
       occurrence?.fields?.forEach((field) => {
@@ -85,14 +162,35 @@ export class ObjectType {
           });
         });
       });
-    return Object.values(fields).filter(Boolean) as FieldDefinitionNode[];
+    return Object.fromEntries(
+      Object.entries(fields).filter(([, def]) => Boolean(def)) as [
+        string,
+        FieldDefinitionNode
+      ][]
+    );
   }
 
+  /**
+   * Get all the child fields from all occurrences of the node.
+   *
+   * @returns {FieldDefinitionNode[]} The list of fields
+   */
+  private getAllFields(): FieldDefinitionNode[] {
+    return Object.values(this.allFieldRecords);
+  }
+
+  /**
+   * Add a qualified field to the list of fields.
+   *
+   * @param {FieldDefinitionNode} field - The field to add.
+   * @param {FieldDefinitionNode[]} fields - The current list of collected fields.
+   * @param {boolean} applyNodeQualifier - Whether or not to usethe nodeQualifier when selecting the node. Defaults to 'true'.
+   */
   private addQualifiedField(
     field: FieldDefinitionNode,
     fields: Record<string, FieldDefinitionNode | null>,
     applyNodeQualifier = true
-  ): FieldDefinitionNode | undefined {
+  ): void {
     if (
       fields[field.name.value] !== null ||
       (applyNodeQualifier && !this.nodeQualifier(field, this.objectTypes))
@@ -107,58 +205,48 @@ export class ObjectType {
   }
 
   /**
-   * The names of all the fields that appear the keys of the node.
+   * Get the names of all the fields that appear in the keys of the node.
    *
    * @returns {string[]} The list of key field names
    */
-  public get allKeyFieldsList(): string[] {
+  private getAllKeyFieldsList(): string[] {
     return [...new Set(this.keys.flatMap((key) => key.fieldsList))];
   }
 
   /**
-   * All the fields that appear in the keys of the node.
+   * Get all the fields that appear in the keys of the node.
    *
    * @returns {FieldDefinitionNode[]} The list of key fields
    */
-  public get allKeyFields(): FieldDefinitionNode[] {
+  public getAllKeyFields(): FieldDefinitionNode[] {
     return this.allFields.filter((field) =>
       this.allKeyFieldsList.includes(field.name.value)
     );
   }
 
   /**
-   * The key selected for use in the FROID schema.
+   * Get the key selected for use in the FROID schema.
    *
    * @returns {Key|undefined} The selected key
    */
-  get selectedKey(): Key | undefined {
+  private getSelectedKey(): Key | undefined {
     return this.keySorter(this.keys, this.node)[0];
   }
 
   /**
    * The list of child objects that appear in the selected key.
-   * Each record is made up of the field referencing a child object and the object it
-   * is referencing.
-   *
-   * Example schema:
-   * type Book @key(fields: "theBookAuthor { name }") {
-   *   theBookAuthor: Author!
-   * }
-   * type Author {
-   *   name
-   * }
-   *
-   * Example record:
-   * { "theBookAuthor": "Author" }
+   * Each record is made up of the field referencing a child object
+   * and the object it is referencing.
    *
    * @returns {Record<string, string>} The list of fields that reference a child object and the object the field is referencing
    */
-  public get childObjectsInSelectedKey(): Record<string, string> {
+  public getChildObjectsInSelectedKey(): Record<string, string> {
     const children: Record<string, string> = {};
-    this.allFields.forEach((field) => {
-      if (!this?.selectedKey?.fieldsList.includes(field.name.value)) {
-        return;
-      }
+    if (!this.selectedKey) {
+      return children;
+    }
+    this.selectedKey.fieldsList.forEach((keyField) => {
+      const field = this.allFieldRecords[keyField];
       const fieldType = FroidSchema.extractFieldType(field);
       if (
         !this.objectTypes.find(
@@ -173,28 +261,16 @@ export class ObjectType {
   }
 
   /**
-   * The names of the fields that are being used by the node itself.
-   *
-   * Example schema:
-   * type Book @key(fields: "author { name }") {
-   *   author: Author!
-   * }
-   * type Author @key(fields: "authorId") {
-   *   authorId: Int!
-   *   name: String!
-   * }
-   *
-   * Example value:
-   * ['authorId']
+   * Get the names of the fields that are being used by the node itself.
    *
    * @returns {string[]} The list of field names
    */
-  public get directlySelectedFields(): string[] {
-    return this.allFields
-      .filter((field) =>
-        this.selectedKey?.fieldsList.includes(field.name.value)
-      )
-      .map((field) => field.name.value);
+  public getDirectlySelectedFields(): string[] {
+    return (
+      this.selectedKey?.fieldsList?.filter((keyField) =>
+        Boolean(this.allFieldRecords[keyField])
+      ) || []
+    );
   }
 
   /**
@@ -223,11 +299,14 @@ export class ObjectType {
    * @returns {FieldDefinitionNode} The list of fields
    */
   public get selectedFields(): FieldDefinitionNode[] {
-    return this.allFields.filter(
-      (field) =>
-        this.directlySelectedFields.includes(field.name.value) ||
-        this.externallySelectedFields.includes(field.name.value)
-    );
+    return [...this.directlySelectedFields, ...this.externallySelectedFields]
+      .map((keyField) => {
+        const field = this.allFieldRecords[keyField];
+        if (field) {
+          return field;
+        }
+      })
+      .filter(Boolean) as FieldDefinitionNode[];
   }
 
   /**

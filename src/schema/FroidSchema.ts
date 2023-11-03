@@ -167,6 +167,7 @@ export class FroidSchema {
       FroidSchema.removeInterfaceObjects(allDefinitionNodes);
 
     this.extensionAndDefinitionNodes = this.getNonRootObjectTypes();
+
     this.objectTypes = this.getObjectDefinitions();
 
     this.findFroidObjectTypes();
@@ -177,9 +178,9 @@ export class FroidSchema {
       kind: Kind.DOCUMENT,
       definitions: [
         this.createLinkSchemaExtension(),
-        ...this.createCustomReturnTypes(),
         this.createQueryDefinition(),
         this.createNodeInterface(),
+        ...this.createCustomReturnTypes(),
         ...this.createObjectTypesAST(),
       ],
     } as DocumentNode);
