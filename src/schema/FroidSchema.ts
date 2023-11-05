@@ -340,13 +340,7 @@ export class FroidSchema {
         existingNode = this.froidObjectTypes[fieldType];
       }
 
-      existingNode.addExternallySelectedFields(
-        keyField.selections.filter(
-          (selection) =>
-            !existingNode.selectedKey ||
-            !existingNode.selectedKey.fieldsList.includes(selection.name)
-        )
-      );
+      existingNode.addExternallySelectedFields(keyField.selections);
 
       this.generateFroidDependency(keyField.selections, existingNode.allFields);
     });
