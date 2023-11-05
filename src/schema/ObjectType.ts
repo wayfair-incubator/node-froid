@@ -436,7 +436,6 @@ export class ObjectType {
    * @returns {boolean} Whether or not the selected key matches external use
    */
   private selectedKeyMatchesExternalUse(): boolean {
-    this._externallySelectedFields; //?
     return Boolean(
       !this._externallySelectedFields.length ||
         !this._selectedKey ||
@@ -447,7 +446,7 @@ export class ObjectType {
   }
 
   /**
-   * @returns
+   * Assigns an externally used key as the selected key.
    */
   private selectedExternallyUsedKey() {
     const newSelectedKey = this.keys.find((key) =>
