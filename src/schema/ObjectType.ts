@@ -329,28 +329,6 @@ export class ObjectType {
   }
 
   /**
-   * The list of selected fields that appear in any of the node's keys.
-   *
-   * @returns {FieldDefinitionNode[]} The list of key fields
-   */
-  public get selectedKeyFields(): FieldDefinitionNode[] {
-    return this.selectedFields.filter((field) =>
-      this.allKeyFieldsList.includes(field.name.value)
-    );
-  }
-
-  /**
-   * The list of selected fields that do not appear in any of the node's keys.
-   *
-   * @returns {FieldDefinitionNode[]} The list of non-key fields
-   */
-  public get selectedNonKeyFields(): FieldDefinitionNode[] {
-    return this.selectedFields.filter(
-      (field) => !this.allKeyFieldsList.includes(field.name.value)
-    );
-  }
-
-  /**
    * The key selected for use in the FROID schema.
    *
    * @returns {Key | undefined} The selected key
