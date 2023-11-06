@@ -873,6 +873,101 @@ describe('FroidSchema class', () => {
     );
   });
 
+  it('figures out key dependencies across multiple subgraphs when there are conflicts between the default selected key and key dependencies', () => {
+    const bookSchema = gql`
+      type Book
+        @key(fields: "bookId")
+        @key(fields: "isbn title")
+        @key(fields: "sku") {
+        bookId: Int!
+        isbn: String!
+        title: String!
+        sku: String!
+      }
+    `;
+
+    const authorSchema = gql`
+      type Author
+        @key(fields: "review { reviewId }")
+        @key(fields: "book { isbn }") {
+        name: String!
+        book: Book!
+        review: Review!
+      }
+
+      type Book @key(fields: "isbn") {
+        isbn: String!
+      }
+
+      type Review @key(fields: "reviewId") {
+        reviewId: Int!
+      }
+    `;
+
+    const reviewSchema = gql`
+      type Review @key(fields: "book { sku }") @key(fields: "reviewId") {
+        reviewId: Int!
+        averageRating: Float!
+        book: Book!
+      }
+
+      type Book @key(fields: "bookId") {
+        sku: String!
+      }
+    `;
+
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+    subgraphs.set('author-subgraph', authorSchema);
+    subgraphs.set('review-subgraph', reviewSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: ['storefront', 'internal'],
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+        type Author implements Node @key(fields: "review { __typename reviewId }") {
+          "The globally unique identifier."
+          id: ID!
+          review: Review!
+        }
+
+        type Book implements Node @key(fields: "bookId") {
+          "The globally unique identifier."
+          id: ID!
+          bookId: Int!
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        type Review implements Node @key(fields: "reviewId") {
+          "The globally unique identifier."
+          id: ID!
+          reviewId: Int!
+        }
+      `
+    );
+  });
+
   it('applies the @external directive to non-key fields used by other entity keys', () => {
     const bookSchema = gql`
       type Book @key(fields: "author { name }") {
