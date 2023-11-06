@@ -1,9 +1,16 @@
-import {FieldDefinitionNode, ObjectTypeDefinitionNode} from 'graphql';
+import {
+  ConstDirectiveNode,
+  FieldDefinitionNode,
+  NamedTypeNode,
+  ObjectTypeDefinitionNode,
+  StringValueNode,
+} from 'graphql';
 import {Key} from './Key';
-import {DirectiveName} from './constants';
+import {DirectiveName, EXTERNAL_DIRECTIVE_AST} from './constants';
 import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter, NodeQualifier} from './FroidSchema';
 import {KeyField} from './KeyField';
+import {implementsNodeInterface} from './astDefinitions';
 
 const FINAL_KEY_MAX_DEPTH = 100;
 
@@ -39,6 +46,10 @@ export class ObjectType {
    * All the fields that appear in the keys of the node.
    */
   public readonly allKeyFields: FieldDefinitionNode[];
+  /**
+   * Whether or not the object is an entity.
+   */
+  public readonly isEntity: boolean;
   /**
    * Fields belonging to this object type that were selected for
    * use in the keys of other object types.
@@ -109,6 +120,7 @@ export class ObjectType {
     this._selectedKey = this.getSelectedKey();
     this.childObjectsInSelectedKey = this.getChildObjectsInSelectedKey();
     this.directlySelectedFields = this.getDirectlySelectedFields();
+    this.isEntity = FroidSchema.isEntity(this.occurrences);
   }
 
   /**
@@ -118,7 +130,7 @@ export class ObjectType {
    */
   private getOccurrences(): ObjectTypeNode[] {
     return this.extensionAndDefinitionNodes.filter(
-      (searchNode) => searchNode.name.value === this.node.name.value
+      (searchNode) => searchNode.name.value === this.typename
     );
   }
 
@@ -132,7 +144,7 @@ export class ObjectType {
       (occurrence) =>
         occurrence.directives
           ?.filter((directive) => directive.name.value === DirectiveName.Key)
-          .map((key) => new Key(this.node.name.value, key)) || []
+          .map((key) => new Key(this.typename, key)) || []
     );
   }
 
@@ -377,23 +389,23 @@ export class ObjectType {
       return;
     }
 
-    if (!this.selectedKeyMatchesExternalUse()) {
-      this.selectedExternallyUsedKey();
+    const usedKeys = this.getUsedKeys();
+    const updatedSelectedKey = usedKeys.shift();
+
+    if (!updatedSelectedKey) {
+      return;
     }
 
-    const mergedKey = new Key(
-      this.node.name.value,
-      this._selectedKey.toString()
-    );
+    // Update the selected key in case a different key was selected
+    this.setSelectedKey(updatedSelectedKey);
+
+    const mergedKey = new Key(this.typename, this._selectedKey.toString());
     const selectedKeyFields = [
-      ...this.selectedKeyFields.map((field) => field.name.value),
+      ...usedKeys.flatMap((key) => key.toString()),
     ].join(' ');
 
     if (selectedKeyFields) {
-      const keyFromSelections = new Key(
-        this.node.name.value,
-        selectedKeyFields
-      );
+      const keyFromSelections = new Key(this.typename, selectedKeyFields);
       mergedKey.merge(keyFromSelections);
     }
     Object.entries(this.childObjectsInSelectedKey).forEach(
@@ -415,7 +427,7 @@ export class ObjectType {
           return;
         }
         const keyToMerge = new Key(
-          this.node.name.value,
+          this.typename,
           `${dependentField} { ${dependencyFinalKey.toString()} }`
         );
         mergedKey.merge(keyToMerge);
@@ -425,43 +437,110 @@ export class ObjectType {
   }
 
   /**
-   * Determine whether or not the selected key matches the use of the entity in other
-   * entity complex keys.
+   * Assigns a new selected key.
    *
-   * - If the entity has no key, this will return true.
-   * - If there are no uses of the entity in another entity complex key, this will return true.
-   * - Otherwise, they key will be compared to use in other entity keys and the validity
-   *   determination will be returned
-   *
-   * @returns {boolean} Whether or not the selected key matches external use
+   * @param {Key} key - The key
    */
-  private selectedKeyMatchesExternalUse(): boolean {
-    return Boolean(
-      !this._externallySelectedFields.length ||
-        !this._selectedKey ||
-        this._selectedKey.fieldsList.some((field) => {
-          return this._externallySelectedFields.includes(field);
-        })
-    );
+  private setSelectedKey(key: Key) {
+    this._selectedKey = key;
+    this.childObjectsInSelectedKey = this.getChildObjectsInSelectedKey();
+    this.directlySelectedFields = this.getDirectlySelectedFields();
   }
 
   /**
-   * Assigns an externally used key as the selected key.
+   * Gets the keys used either by default or in other entity keys.
+   *
+   * @returns {Key[]} The used keys
    */
-  private selectedExternallyUsedKey() {
-    const newSelectedKey = this.keys.find((key) =>
+  private getUsedKeys(): Key[] {
+    if (!this.isEntity || !this._selectedKey) {
+      return [];
+    }
+
+    const usedExternalKeys = this.keys.filter((key) =>
       key.fieldsList.some((field) =>
         this._externallySelectedFields.includes(field)
       )
     );
-    if (newSelectedKey) {
-      // Make the new key official
-      this._selectedKey = newSelectedKey;
-      // Update the child objects in the key
-      this.childObjectsInSelectedKey = this.getChildObjectsInSelectedKey();
-      // Update the directly selected fields
-      this.directlySelectedFields = this.getDirectlySelectedFields();
+    if (!usedExternalKeys.length) {
+      return [this._selectedKey];
     }
+    return usedExternalKeys.sort((aKey, bKey) => {
+      if (aKey === this._selectedKey) {
+        return -1;
+      }
+      if (bKey === this._selectedKey) {
+        return 1;
+      }
+      return 0;
+    });
+  }
+
+  /**
+   * Gets the final fields for the object.
+   *
+   * @param {key|undefined} finalKey - The final key of the object
+   * @returns {FieldDefinitionNode[]} The final fields
+   */
+  private getFinalFields(finalKey: Key | undefined): FieldDefinitionNode[] {
+    const fieldsList = [
+      ...new Set([
+        ...(finalKey?.fieldsList || []),
+        ...this._externallySelectedFields,
+      ]),
+    ];
+    const fields = fieldsList
+      .map((fieldName) => {
+        const fieldDef = this.allFieldRecords[fieldName];
+        if (!fieldDef) {
+          return;
+        }
+        const isExternalEntityField =
+          !this.isEntity || this.allKeyFieldsList.includes(fieldName);
+        return {
+          ...fieldDef,
+          description: undefined,
+          directives: isExternalEntityField
+            ? undefined
+            : [EXTERNAL_DIRECTIVE_AST],
+        };
+      })
+      .filter(Boolean) as FieldDefinitionNode[];
+    return fields;
+  }
+
+  /**
+   * Get contract @tag directives for an ID field. Returns all occurrences of unique @tag
+   * directives used across all fields included in the node's @key directive
+   *
+   * @returns {ConstDirectiveNode[]} A list of `@tag` directives to use for the given `id` field
+   */
+  private getTagDirectivesForIdField(): ConstDirectiveNode[] {
+    const tagDirectiveNames = this.extensionAndDefinitionNodes
+      .filter((obj) => obj.name.value === this.typename)
+      .flatMap((obj) => {
+        const taggableNodes = obj.fields?.flatMap((field) => [
+          field,
+          ...(field?.arguments || []),
+        ]);
+        return taggableNodes?.flatMap((field) =>
+          field.directives
+            ?.filter((directive) => directive.name.value === DirectiveName.Tag)
+            .map(
+              (directive) =>
+                (directive?.arguments?.[0].value as StringValueNode).value
+            )
+        );
+      })
+      .filter(Boolean)
+      .sort() as string[];
+
+    const uniqueTagDirectivesNames: string[] = [
+      ...new Set(tagDirectiveNames || []),
+    ];
+    return uniqueTagDirectivesNames.map<ConstDirectiveNode>((tagName) =>
+      FroidSchema.createTagDirective(tagName)
+    );
   }
 
   /**
@@ -471,14 +550,37 @@ export class ObjectType {
    * @returns {void}
    */
   public addExternallySelectedFields(fields: KeyField[]): void {
-    const additionalFields = fields.flatMap((field) => {
-      const usedKeys = this.keys
-        .filter((key) => key.fieldsList.includes(field.name))
-        .flatMap((key) => key.fieldsList);
-      return [field.name, ...usedKeys];
-    });
     this._externallySelectedFields = [
-      ...new Set([...this._externallySelectedFields, ...additionalFields]),
+      ...new Set([
+        ...this._externallySelectedFields,
+        ...fields.map((field) => field.name),
+      ]),
     ];
+  }
+
+  /**
+   * Creates the object's AST.
+   *
+   * @returns {ObjectTypeDefinitionNode} The object's AST.
+   */
+  public toAst(): ObjectTypeDefinitionNode {
+    let froidFields: FieldDefinitionNode[] = [];
+    let froidInterfaces: NamedTypeNode[] = [];
+    if (this.isEntity) {
+      froidFields = [
+        FroidSchema.createIdField(this.getTagDirectivesForIdField()),
+      ];
+      froidInterfaces = [implementsNodeInterface];
+    }
+    const finalKey = this.finalKey;
+    const finalKeyDirective = finalKey?.toDirective();
+    const fields = [...froidFields, ...this.getFinalFields(finalKey)];
+    return {
+      ...this.node,
+      description: undefined,
+      interfaces: froidInterfaces,
+      directives: [...(finalKeyDirective ? [finalKeyDirective] : [])],
+      fields,
+    };
   }
 }

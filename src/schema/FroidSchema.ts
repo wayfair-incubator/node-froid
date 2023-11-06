@@ -8,7 +8,6 @@ import {
   FieldDefinitionNode,
   InterfaceTypeDefinitionNode,
   Kind,
-  NamedTypeNode,
   ObjectTypeDefinitionNode,
   ScalarTypeDefinitionNode,
   SchemaExtensionNode,
@@ -22,14 +21,12 @@ import {
   CONTRACT_DIRECTIVE_NAME,
   DEFAULT_FEDERATION_LINK_IMPORTS,
   DirectiveName,
-  EXTERNAL_DIRECTIVE_AST,
   FED2_OPT_IN_URL,
   FED2_VERSION_PREFIX,
   ID_FIELD_NAME,
   ID_FIELD_TYPE,
 } from './constants';
 import assert from 'assert';
-import {implementsNodeInterface} from './astDefinitions';
 import {Key} from './Key';
 import {KeyField} from './KeyField';
 import {ObjectType} from './ObjectType';
@@ -192,40 +189,8 @@ export class FroidSchema {
    * @returns {ObjectTypeDefinitionNode[]} The generated object types.
    */
   private createObjectTypesAST(): ObjectTypeDefinitionNode[] {
-    return Object.values(this.froidObjectTypes).map(
-      ({node, finalKey, selectedKeyFields, selectedNonKeyFields}) => {
-        let froidFields: FieldDefinitionNode[] = [];
-        let externalFieldDirectives: ConstDirectiveNode[] = [];
-        let froidInterfaces: NamedTypeNode[] = [];
-        if (FroidSchema.isEntity(node)) {
-          froidFields = [
-            FroidSchema.createIdField(this.getTagDirectivesForIdField(node)),
-          ];
-          externalFieldDirectives = [EXTERNAL_DIRECTIVE_AST];
-          froidInterfaces = [implementsNodeInterface];
-        }
-        const fields = [
-          ...froidFields,
-          ...selectedKeyFields.map((field) => ({
-            ...field,
-            description: undefined,
-            directives: [],
-          })),
-          ...selectedNonKeyFields.map((field) => ({
-            ...field,
-            description: undefined,
-            directives: externalFieldDirectives,
-          })),
-        ];
-        const finalKeyDirective = finalKey?.toDirective();
-        return {
-          ...node,
-          description: undefined,
-          interfaces: froidInterfaces,
-          directives: [...(finalKeyDirective ? [finalKeyDirective] : [])],
-          fields,
-        };
-      }
+    return Object.values(this.froidObjectTypes).map((froidObject) =>
+      froidObject.toAst()
     );
   }
 
@@ -627,7 +592,7 @@ export class FroidSchema {
    * @param {string} name - The name of the tag
    * @returns {ConstDirectiveNode} A directive AST node for @tag
    */
-  private static createTagDirective(name: string): ConstDirectiveNode {
+  public static createTagDirective(name: string): ConstDirectiveNode {
     return {
       kind: Kind.DIRECTIVE,
       name: {kind: Kind.NAME, value: CONTRACT_DIRECTIVE_NAME},
@@ -667,7 +632,7 @@ export class FroidSchema {
    * @param {ConstDirectiveNode[]} directives - The directives to add to the field definition
    * @returns {FieldDefinitionNode} The `id` field definition
    */
-  private static createIdField(
+  public static createIdField(
     directives: ConstDirectiveNode[] = []
   ): FieldDefinitionNode {
     return {
@@ -828,21 +793,21 @@ export class FroidSchema {
    * @param {ObjectTypeNode[]} nodes - The nodes to check
    * @returns {boolean} Whether or not any nodes are entities
    */
-  private static isEntity(nodes: ObjectTypeNode[]);
+  public static isEntity(nodes: ObjectTypeNode[]): boolean;
   /**
    * Check whether or not a node is an entity.
    *
    * @param {ObjectTypeNode} node - A node to check
    * @returns {boolean} Whether or not the node is an entity
    */
-  private static isEntity(node: ObjectTypeNode);
+  public static isEntity(node: ObjectTypeNode): boolean;
   /**
    * Check whether or not one of more nodes is an entity.
    *
    * @param {ObjectTypeNode | ObjectTypeNode[]} node - One or more nodes to collectively check
    * @returns {boolean} Whether or not any nodes are entities
    */
-  private static isEntity(node: ObjectTypeNode | ObjectTypeNode[]): boolean {
+  public static isEntity(node: ObjectTypeNode | ObjectTypeNode[]): boolean {
     const nodesToCheck = Array.isArray(node) ? node : [node];
     return nodesToCheck.some((node) =>
       node?.directives?.some(
