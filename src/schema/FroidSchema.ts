@@ -131,7 +131,7 @@ export class FroidSchema {
     this.federationVersion = federationVersion;
 
     assert(
-      this.federationVersion.indexOf(FED2_VERSION_PREFIX) > -1,
+      this.federationVersion.startsWith(FED2_VERSION_PREFIX),
       `Federation version must be a valid '${FED2_VERSION_PREFIX}x' version. Examples: v2.0, v2.3`
     );
 
