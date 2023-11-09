@@ -2,3 +2,4 @@ node_modules
 dist
 test-report.xml
 coverage/
+.DS_Store

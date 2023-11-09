@@ -122,6 +122,7 @@ describe('generateFroidSchema for federation v2', () => {
       }
 
       type Brand @key(fields: "id") {
+        "The globally unique identifier."
         id: ID!
         name: String
       }
@@ -139,17 +140,24 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -179,17 +187,24 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -222,18 +237,25 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku") {
+        type Product implements Node @key(fields: "sku upc") {
+          "The globally unique identifier."
           id: ID!
-          upc: String!
           sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -280,18 +302,25 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
-        type Product implements Node @key(fields: "upc sku") {
+        type Product implements Node @key(fields: "sku upc") {
+          "The globally unique identifier."
           id: ID!
-          upc: String!
           sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -341,24 +370,31 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
-          id: ID!
-          upc: String!
-          sku: String!
-          brand: [Brand!]!
-        }
-
         type Brand {
           brandId: Int!
           store: Store
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "brand { brandId store { storeId } } sku upc") {
+          "The globally unique identifier."
+          id: ID!
+          brand: [Brand!]!
+          sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
         type Store {
@@ -410,17 +446,24 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
         type Product implements Node @key(fields: "upc") {
+          "The globally unique identifier."
           id: ID!
           upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -478,28 +521,36 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku") {
-          id: ID!
-          upc: String!
-          sku: String!
-        }
-
-        type Book implements Node @key(fields: "bookId author { authorId }") {
-          id: ID!
-          bookId: String!
-          author: Author!
-        }
-
         type Author {
           authorId: String!
+        }
+
+        type Book implements Node @key(fields: "author { authorId } bookId") {
+          "The globally unique identifier."
+          id: ID!
+          author: Author!
+          bookId: String!
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "sku upc") {
+          "The globally unique identifier."
+          id: ID!
+          sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -544,24 +595,31 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
-        type Product implements Node @key(fields: "upc sku brand { brandId store { storeId } }") {
-          id: ID!
-          upc: String!
-          sku: String!
-          brand: [Brand!]!
-        }
-
         type Brand {
           brandId: Int!
           store: Store
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Product implements Node @key(fields: "brand { brandId store { storeId } } sku upc") {
+          "The globally unique identifier."
+          id: ID!
+          brand: [Brand!]!
+          sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
         type Store {
@@ -650,22 +708,30 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
-        type User implements Node @key(fields: "userId") {
-          id: ID!
-          userId: String!
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
         type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
           todoId: Int!
+        }
+
+        type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
+          id: ID!
+          userId: String!
         }
       `
     );
@@ -710,24 +776,32 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
-          id: ID!
-        }
-
         type Brand implements Node @key(fields: "brandId") {
+          "The globally unique identifier."
           id: ID!
           brandId: Int!
         }
 
-        type Product implements Node @key(fields: "upc sku brand { brandId }") {
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
           id: ID!
-          upc: String!
-          sku: String!
+        }
+
+        type Product implements Node @key(fields: "brand { brandId } sku upc") {
+          "The globally unique identifier."
+          id: ID!
           brand: [Brand!]!
+          sku: String!
+          upc: String!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
       `
     );
@@ -768,15 +842,22 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
         type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String!
         }
@@ -830,20 +911,28 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
         type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
           todoId: Int!
         }
 
         type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
           id: ID!
           userId: String!
         }
@@ -879,24 +968,30 @@ describe('generateFroidSchema for federation v2', () => {
       ) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
       type Query {
-        node(id: ID!): Node
+        "Fetches an entity by its globally unique identifier."
+        node("A globally unique entity identifier." id: ID!): Node
       }
 
+      "The global identification interface implemented by all entities."
       interface Node {
+        "The globally unique identifier."
         id: ID!
       }
 
       type User implements Node @key(fields: "userId") {
+        "The globally unique identifier."
         id: ID!
         userId: String!
       }
 
       type Todo implements Node @key(fields: "todoId") {
+        "The globally unique identifier."
         id: ID!
         todoId: Int!
       }
 
       type AnotherType implements Node @key(fields: "someId") {
+        "The globally unique identifier."
         id: ID!
         someId: Int!
       }
@@ -916,22 +1011,30 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node {
+          "The globally unique identifier."
           id: ID!
         }
 
-        type User implements Node @key(fields: "userId") {
-          id: ID!
-          userId: String!
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
         }
 
         type Todo implements Node @key(fields: "todoId") {
+          "The globally unique identifier."
           id: ID!
           todoId: Int!
+        }
+
+        type User implements Node @key(fields: "userId") {
+          "The globally unique identifier."
+          id: ID!
+          userId: String!
         }
       `
     );
@@ -979,29 +1082,37 @@ describe('generateFroidSchema for federation v2', () => {
       gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
+        "The global identification interface implemented by all entities."
+        interface Node {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node
+        }
+
+        type Todo implements Node @key(fields: "customField todoId") {
+          "The globally unique identifier."
+          id: ID!
+          customField: UsedCustomScalar1
+          todoId: Int!
+        }
+
         scalar UsedCustomScalar1
 
         scalar UsedCustomScalar2
 
-        type Query {
-          node(id: ID!): Node
-        }
-
-        interface Node {
+        type User implements Node @key(fields: "customField1 customField2 userId") {
+          "The globally unique identifier."
           id: ID!
-        }
-
-        type User implements Node @key(fields: "userId customField1 customField2") {
-          id: ID!
-          userId: String!
           customField1: UsedCustomScalar1
           customField2: [UsedCustomScalar2!]!
-        }
-
-        type Todo implements Node @key(fields: "todoId customField") {
-          id: ID!
-          todoId: Int!
-          customField: UsedCustomScalar1
+          userId: String!
         }
       `
     );
@@ -1035,17 +1146,24 @@ describe('generateFroidSchema for federation v2', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
             id: ID!
           }
 
           type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
             id: ID!
             upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
           }
         `
       );
@@ -1078,17 +1196,24 @@ describe('generateFroidSchema for federation v2', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
+          "The global identification interface implemented by all entities."
           interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
             id: ID!
           }
 
           type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
             id: ID! @tag(name: "storefront")
             upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
           }
         `
       );
@@ -1151,35 +1276,46 @@ describe('generateFroidSchema for federation v2', () => {
         gql`
           extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-          type Query {
-            node(id: ID!): Node @tag(name: "storefront") @tag(name: "supplier")
-          }
-
-          interface Node @tag(name: "storefront") @tag(name: "supplier") {
-            id: ID!
-          }
-
-          type Product implements Node @key(fields: "upc") {
-            id: ID! @tag(name: "internal") @tag(name: "storefront")
-            upc: String!
-          }
-
           type Brand implements Node @key(fields: "brandId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal") @tag(name: "storefront")
             brandId: Int!
           }
 
-          type StorefrontUser implements Node @key(fields: "userId") {
-            id: ID! @tag(name: "internal") @tag(name: "storefront")
-            userId: String!
-          }
-
           type InternalUser implements Node @key(fields: "userId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal")
             userId: String!
           }
 
+          "The global identification interface implemented by all entities."
+          interface Node @tag(name: "storefront") @tag(name: "supplier") {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Product implements Node @key(fields: "upc") {
+            "The globally unique identifier."
+            id: ID! @tag(name: "internal") @tag(name: "storefront")
+            upc: String!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node @tag(name: "storefront") @tag(name: "supplier")
+          }
+
+          type StorefrontUser implements Node @key(fields: "userId") {
+            "The globally unique identifier."
+            id: ID! @tag(name: "internal") @tag(name: "storefront")
+            userId: String!
+          }
+
           type Todo implements Node @key(fields: "todoId") {
+            "The globally unique identifier."
             id: ID! @tag(name: "internal")
             todoId: Int!
           }
@@ -1241,37 +1377,45 @@ describe('generateFroidSchema for federation v2', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        type Todo implements Node @key(fields: "customField todoId") {
+          "The globally unique identifier."
+          id: ID!
+          customField: UsedCustomScalar1
+          todoId: Int!
+        }
+
         scalar UsedCustomScalar1
 
         scalar UsedCustomScalar2
 
         enum UsedEnum {
           VALUE_ONE
-          VALUE_TWO @inaccessible
           VALUE_THREE
+          VALUE_TWO @inaccessible
         }
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
+        type User implements Node @key(fields: "customEnum1 customEnum2 customField1 customField2 userId") {
+          "The globally unique identifier."
           id: ID!
-        }
-
-        type User implements Node @key(fields: "userId customField1 customField2 customEnum1 customEnum2") {
-          id: ID!
-          userId: String!
-          customField1: UsedCustomScalar1
-          customField2: [UsedCustomScalar2!]!
           customEnum1: UsedEnum
           customEnum2: [UsedEnum!]!
-        }
-
-        type Todo implements Node @key(fields: "todoId customField") {
-          id: ID!
-          todoId: Int!
-          customField: UsedCustomScalar1
+          customField1: UsedCustomScalar1
+          customField2: [UsedCustomScalar2!]!
+          userId: String!
         }
       `
       );
@@ -1310,20 +1454,28 @@ describe('generateFroidSchema for federation v2', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
-        }
-
+        "The global identification interface implemented by all entities."
         interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
           id: ID!
         }
 
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
         type TypeA implements Node @key(fields: "selections { selectionId }") {
+          "The globally unique identifier."
           id: ID! @tag(name: "storefront")
           selections: [TypeB!]
         }
 
         type TypeB implements Node @key(fields: "selectionId") {
+          "The globally unique identifier."
           id: ID! @tag(name: "storefront")
           selectionId: String!
         }
@@ -1399,40 +1551,49 @@ describe('generateFroidSchema for federation v2', () => {
         gql`
         extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag"])
 
-        type Query {
-          node(id: ID!): Node @tag(name: "internal") @tag(name: "storefront")
+        type Address {
+          country: String!
+          postalCode: String!
         }
 
-        interface Node @tag(name: "internal") @tag(name: "storefront") {
+        type Author implements Node @key(fields: "authorId") {
+          "The globally unique identifier."
           id: ID!
+          address: Address!
+          authorId: Int!
+          fullName: String!
+        }
+
+        type Book implements Node @key(fields: "author { address { postalCode } fullName } bookId") {
+          "The globally unique identifier."
+          id: ID!
+          author: Author!
+          bookId: String!
         }
 
         type Magazine implements Node @key(fields: "magazineId publisher { address { country } }") {
+          "The globally unique identifier."
           id: ID!
           magazineId: String!
           publisher: Publisher!
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
         }
 
         type Publisher {
           address: Address!
         }
 
-        type Address {
-          country: String!
-          postalCode: String!
-        }
-
-        type Book implements Node @key(fields: "bookId author { fullName address { postalCode } }") {
-          id: ID!
-          bookId: String!
-          author: Author!
-        }
-
-        type Author implements Node @key(fields: "authorId") {
-          id: ID!
-          fullName: String!
-          address: Address!
-          authorId: Int!
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
         }
       `
       );

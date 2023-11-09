@@ -15,6 +15,10 @@ export function createIdField(
 ): FieldDefinitionNode {
   return {
     kind: Kind.FIELD_DEFINITION,
+    description: {
+      kind: Kind.STRING,
+      value: `The globally unique identifier.`,
+    },
     name: {
       kind: Kind.NAME,
       value: ID_FIELD_NAME,
