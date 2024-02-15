@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.1.1] - 2024-02-15
+
+### Fix
+
+- The `FroidSchema` class does not include all enum values found across
+  subgraphs when enum definitions differ.
+
 ## [v3.1.0] - 2023-11-09
 
 - Added a new `FroidSchema` class to test the next version of FROID schema

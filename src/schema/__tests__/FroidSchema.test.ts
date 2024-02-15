@@ -1755,6 +1755,79 @@ describe('FroidSchema class', () => {
     );
   });
 
+  it('includes a combined enum definition when enum values differ across subgraphs', () => {
+    const userSchema = gql`
+      enum UsedEnum {
+        VALUE_ONE
+        VALUE_TWO
+      }
+    `;
+    const todoSchema = gql`
+      enum UsedEnum {
+        VALUE_THREE
+        VALUE_FOUR
+      }
+
+      type User @key(fields: "userId enumField") {
+        userId: String!
+        enumField: UsedEnum!
+      }
+    `;
+    const bookSchema = gql`
+      enum UsedEnum {
+        VALUE_THREE
+        VALUE_FIVE
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('user-subgraph', userSchema);
+    subgraphs.set('todo-subgraph', todoSchema);
+    subgraphs.set('book-subgraph', bookSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: ['storefront', 'internal'],
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+
+        enum UsedEnum {
+          VALUE_FIVE
+          VALUE_FOUR
+          VALUE_ONE
+          VALUE_THREE
+          VALUE_TWO
+        }
+
+        type User implements Node @key(fields: "enumField userId") {
+          "The globally unique identifier."
+          id: ID!
+          enumField: UsedEnum!
+          userId: String!
+        }
+      `
+    );
+  });
+
   it('ignores keys that use the `id` field', () => {
     const productSchema = gql`
       type Query {
