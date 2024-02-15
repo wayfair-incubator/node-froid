@@ -5,6 +5,7 @@ import {
   DefinitionNode,
   DocumentNode,
   EnumTypeDefinitionNode,
+  EnumValueDefinitionNode,
   FieldDefinitionNode,
   InterfaceTypeDefinitionNode,
   Kind,
@@ -423,7 +424,7 @@ export class FroidSchema {
    *
    * Enum values with @inaccessible tags are stripped in Federation 2.
    *
-   * Contract @tag directives are NOt applied when generating non-native scalar
+   * Contract @tag directives are NOT applied when generating non-native scalar
    * return types in the Froid subgraph. Contract @tag directives are merged
    * during supergraph composition so Froid subgraph can rely on @tag directives
    * defined by the owning subgraph(s), UNLESS an enum value is marked @inaccessible,
@@ -450,8 +451,12 @@ export class FroidSchema {
       });
     });
 
-    // De-dupe non-native scalar return types. Any definitions of scalars and enums
-    // will work since they can be guaranteed to be consistent across subgraphs
+    // De-dupe non-native scalar return types.
+    //
+    // Any definitions of scalars and enums will work since they are
+    // consistent across subgraphs.
+    //
+    // Enums must be combined across all subgraphs since they can deviate.
     const nonNativeScalarFieldTypes = new Map<
       string,
       SupportedFroidReturnTypes
@@ -462,27 +467,57 @@ export class FroidSchema {
       ) as SupportedFroidReturnTypes[]
     ).forEach((nonNativeScalarType) => {
       const returnTypeName = nonNativeScalarType.name.value;
-      if (
-        !nonNativeScalarDefinitionNames.has(returnTypeName) ||
-        nonNativeScalarFieldTypes.has(returnTypeName)
-      ) {
+      if (!nonNativeScalarDefinitionNames.has(returnTypeName)) {
         // Don't get types that are not returned in froid schema
         return;
       }
 
       if (nonNativeScalarType.kind === Kind.ENUM_TYPE_DEFINITION) {
+        let finalEnumValues: readonly EnumValueDefinitionNode[] = [];
+
+        // Collect the enum values from the enum that is currently being inspected,
+        // omitting all applied directives.
         const enumValues = nonNativeScalarType.values?.map((enumValue) => ({
           ...enumValue,
-          directives: enumValue.directives?.filter(
-            (directive) => directive.name.value === 'inaccessible'
-          ),
+          directives: [],
         }));
+
+        // Get the enum definition we've created so far if one exists
+        const existingEnum = nonNativeScalarFieldTypes.get(
+          returnTypeName
+        ) as EnumTypeDefinitionNode;
+
+        // If there are existing enum values, use them for the final enum
+        if (existingEnum?.values) {
+          finalEnumValues = existingEnum.values;
+        }
+
+        // If there are enum values associated with the enum definition
+        // we're currently inspecting, include them in the final list of
+        // enum values
+        if (enumValues) {
+          // Deduplicate enum values
+          const dedupedEnumValues = enumValues.filter(
+            (value) =>
+              !finalEnumValues.some(
+                (existingValue) => existingValue.name.value === value.name.value
+              )
+          );
+          // Update the final enum value list
+          finalEnumValues = [...finalEnumValues, ...dedupedEnumValues];
+        }
+
         nonNativeScalarFieldTypes.set(returnTypeName, {
           ...nonNativeScalarType,
-          values: enumValues,
+          values: finalEnumValues.length ? finalEnumValues : undefined,
           directives: [],
           description: undefined,
         } as EnumTypeDefinitionNode);
+        return;
+      }
+
+      if (nonNativeScalarFieldTypes.has(returnTypeName)) {
+        // Don't duplicate scalars
         return;
       }
 
