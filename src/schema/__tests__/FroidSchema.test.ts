@@ -1739,7 +1739,7 @@ describe('FroidSchema class', () => {
         enum UsedEnum {
           VALUE_ONE
           VALUE_THREE
-          VALUE_TWO @inaccessible
+          VALUE_TWO
         }
 
         type User implements Node @key(fields: "customEnum1 customEnum2 customField1 customField2 userId") {

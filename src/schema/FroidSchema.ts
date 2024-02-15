@@ -476,12 +476,10 @@ export class FroidSchema {
         let finalEnumValues: readonly EnumValueDefinitionNode[] = [];
 
         // Collect the enum values from the enum that is currently being inspected,
-        // skipping any enum value with @inaccessible applied to it.
+        // omitting all applied directives.
         const enumValues = nonNativeScalarType.values?.map((enumValue) => ({
           ...enumValue,
-          directives: enumValue.directives?.filter(
-            (directive) => directive.name.value === 'inaccessible'
-          ),
+          directives: [],
         }));
 
         // Get the enum definition we've created so far if one exists
