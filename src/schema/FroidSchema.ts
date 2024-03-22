@@ -40,13 +40,18 @@ type SupportedFroidReturnTypes =
 export type KeySorter = (keys: Key[], node: ObjectTypeNode) => Key[];
 export type NodeQualifier = (
   node: ASTNode,
-  objectTypes: ObjectTypeNode[]
+  qualifiedNodes: ASTNode[]
+) => boolean;
+export type OmittedEntityQualifier = (
+  omittedEntity: ObjectTypeDefinitionNode,
+  includedEntities: ObjectTypeDefinitionNode[]
 ) => boolean;
 
 export type FroidSchemaOptions = {
   contractTags?: string[];
   keySorter?: KeySorter;
   nodeQualifier?: NodeQualifier;
+  omittedEntityQualifier?: OmittedEntityQualifier;
   typeExceptions?: string[];
 };
 
@@ -61,6 +66,8 @@ export type FroidSchemaOptions = {
 const defaultKeySorter: KeySorter = (keys: Key[]): Key[] => keys;
 
 const defaultNodeQualifier: NodeQualifier = () => true;
+
+const defaultOmittedEntityQualifier: NodeQualifier = () => false;
 
 const scalarNames = specifiedScalarTypes.map((scalar) => scalar.name);
 
@@ -90,6 +97,10 @@ export class FroidSchema {
    * The node qualifier function.
    */
   private readonly nodeQualifier: NodeQualifier;
+  /**
+   * The omitted entity qualifier function.
+   */
+  private readonly omittedEntityQualifier: OmittedEntityQualifier;
   /**
    * the list of types that should be omitted from the FROID schema.
    */
@@ -139,6 +150,8 @@ export class FroidSchema {
     this.typeExceptions = options?.typeExceptions ?? [];
     this.keySorter = options?.keySorter ?? defaultKeySorter;
     this.nodeQualifier = options?.nodeQualifier ?? defaultNodeQualifier;
+    this.omittedEntityQualifier =
+      options?.omittedEntityQualifier ?? defaultOmittedEntityQualifier;
     this.contractTags =
       options?.contractTags
         ?.sort()
@@ -217,6 +230,7 @@ export class FroidSchema {
    * Finds the object types that should be included in the FROID schema.
    */
   private findFroidObjectTypes() {
+    const omittedEntities: ObjectTypeDefinitionNode[] = [];
     this.objectTypes.forEach((node: ObjectTypeDefinitionNode) => {
       const isException = this.typeExceptions.some(
         (exception) => node.name.value === exception
@@ -229,11 +243,36 @@ export class FroidSchema {
         )
       );
 
-      if (isException || !passesNodeQualifier || !FroidSchema.isEntity(node)) {
+      if (isException || !FroidSchema.isEntity(node)) {
+        return;
+      }
+
+      if (!passesNodeQualifier) {
+        omittedEntities.push(node);
         return;
       }
 
       this.createFroidObjectType(node);
+    });
+
+    // After all FROID objects are identified, ensure there aren't
+    // any omitted FROID objects we want to include
+    omittedEntities.forEach((entity) => {
+      if (this.froidObjectTypes[entity.name.value]) {
+        // Skip any objects that are already included
+        return;
+      }
+      const qualifies = this.omittedEntityQualifier(
+        entity,
+        Object.values(this.froidObjectTypes).map((obj) => obj.node)
+      );
+      if (!qualifies) {
+        // Skip any omitted objects that we don't want to include
+        return;
+      }
+
+      // Add any omitted objects that we do want to include
+      this.createFroidObjectType(entity);
     });
   }
 

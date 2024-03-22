@@ -1,5 +1,10 @@
 import {stripIndent as gql} from 'common-tags';
-import {FroidSchema, KeySorter, NodeQualifier} from '../FroidSchema';
+import {
+  FroidSchema,
+  KeySorter,
+  NodeQualifier,
+  OmittedEntityQualifier,
+} from '../FroidSchema';
 import {Kind} from 'graphql';
 import {FED2_DEFAULT_VERSION} from '../constants';
 
@@ -10,6 +15,7 @@ function generateSchema({
   typeExceptions = [],
   federationVersion,
   nodeQualifier,
+  omittedEntityQualifier,
   keySorter,
 }: {
   subgraphs: Map<string, string>;
@@ -18,6 +24,7 @@ function generateSchema({
   typeExceptions?: string[];
   federationVersion: string;
   nodeQualifier?: NodeQualifier;
+  omittedEntityQualifier?: OmittedEntityQualifier;
   keySorter?: KeySorter;
 }) {
   const froidSchema = new FroidSchema(
@@ -28,6 +35,7 @@ function generateSchema({
       contractTags,
       typeExceptions,
       nodeQualifier,
+      omittedEntityQualifier,
       keySorter,
     }
   );
@@ -1228,6 +1236,210 @@ describe('FroidSchema class', () => {
             id: ID!
             isbn: String!
             title: String @external
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
+          }
+        `
+    );
+  });
+
+  it('defaults to omitting entities that fail to match the custom qualifier', () => {
+    const bookSchema = gql`
+      type Book @key(fields: "isbn") {
+        isbn: String!
+      }
+    `;
+    const authorSchema = gql`
+      type Book @key(fields: "isbn") {
+        isbn: String!
+      }
+
+      type Author @key(fields: "authorId") {
+        authorId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+    subgraphs.set('author-subgraph', authorSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
+      nodeQualifier: (node) => {
+        if (
+          node.kind === Kind.OBJECT_TYPE_DEFINITION &&
+          node.name.value === 'Book'
+        ) {
+          return false;
+        }
+        return true;
+      },
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+          type Author implements Node @key(fields: "authorId") {
+            "The globally unique identifier."
+            id: ID!
+            authorId: Int!
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
+          }
+        `
+    );
+  });
+
+  it('includes entities that fail to match the custom qualifier if they are reference in another entity key', () => {
+    const bookSchema = gql`
+      type Book @key(fields: "isbn") {
+        isbn: String!
+        title: String
+      }
+    `;
+    const authorSchema = gql`
+      type Book @key(fields: "isbn") {
+        isbn: String!
+        title: [String]
+      }
+
+      type Author @key(fields: "book { title }") {
+        book: Book!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+    subgraphs.set('author-subgraph', authorSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
+      nodeQualifier: (node) => {
+        if (
+          node.kind === Kind.OBJECT_TYPE_DEFINITION &&
+          node.name.value === 'Book'
+        ) {
+          return false;
+        }
+        return true;
+      },
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+          type Author implements Node @key(fields: "book { __typename isbn title }") {
+            "The globally unique identifier."
+            id: ID!
+            book: Book!
+          }
+
+          type Book implements Node @key(fields: "isbn") {
+            "The globally unique identifier."
+            id: ID!
+            isbn: String!
+            title: String @external
+          }
+
+          "The global identification interface implemented by all entities."
+          interface Node {
+            "The globally unique identifier."
+            id: ID!
+          }
+
+          type Query {
+            "Fetches an entity by its globally unique identifier."
+            node(
+              "A globally unique entity identifier."
+              id: ID!
+            ): Node
+          }
+        `
+    );
+  });
+
+  it('includes entities that fail to match the custom qualifier if they pass a custom qualifier for omitted entities', () => {
+    const bookSchema = gql`
+      type Book @key(fields: "isbn") {
+        isbn: String!
+      }
+    `;
+    const authorSchema = gql`
+      type Book @key(fields: "bookId") {
+        bookId: Int!
+      }
+
+      type Author @key(fields: "authorId") {
+        authorId: Int!
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+    subgraphs.set('author-subgraph', authorSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      federationVersion: FED2_DEFAULT_VERSION,
+      nodeQualifier: (node) => {
+        if (
+          node.kind === Kind.OBJECT_TYPE_DEFINITION &&
+          node.name.value === 'Book'
+        ) {
+          return false;
+        }
+        return true;
+      },
+      omittedEntityQualifier: () => {
+        return true;
+      },
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+          type Author implements Node @key(fields: "authorId") {
+            "The globally unique identifier."
+            id: ID!
+            authorId: Int!
+          }
+
+          type Book implements Node @key(fields: "isbn") {
+            "The globally unique identifier."
+            id: ID!
+            isbn: String!
           }
 
           "The global identification interface implemented by all entities."
