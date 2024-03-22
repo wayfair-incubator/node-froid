@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.0] - 2024-03-22
+
+### Added
+
+- Added a new option for an `omittedEntityQualifier` to re-evaluate and include
+  entities that may have been erroneously omitted by the `nodeQualifier`. This
+  provided the flexibility to fix missing entities while preserving previous
+  behavior
+
 ## [v3.1.1] - 2024-02-15
 
 ### Fix
