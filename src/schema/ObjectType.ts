@@ -56,6 +56,11 @@ export class ObjectType {
    */
   private _externallySelectedFields: string[] = [];
   /**
+   * Key selections belonging to this object type that were selected
+   * for use in the keys of other object types.
+   */
+  private _externalKeySelections: KeyField[] = [];
+  /**
    * The key selected for use in the FROID schema.
    */
   private _selectedKey: Key | undefined;
@@ -308,6 +313,15 @@ export class ObjectType {
   }
 
   /**
+   * The key selections that are referenced in another entity's key.
+   *
+   * @returns {KeyField[]} The list of key field selections
+   */
+  public get externalKeySelections(): KeyField[] {
+    return this._externalKeySelections;
+  }
+
+  /**
    * The list of all fields referenced in the node key and by other entities.
    *
    * @returns {FieldDefinitionNode} The list of fields
@@ -354,6 +368,10 @@ export class ObjectType {
    * @returns {Key|undefined} The final key or undefined if the node has no key.
    */
   private getFinalKey(depth = 0, ancestors: string[] = []): Key | undefined {
+    if (!this._selectedKey) {
+      this.setSelectedKeyFromExternalSelections();
+    }
+
     if (!this._selectedKey) {
       return;
     }
@@ -426,12 +444,45 @@ export class ObjectType {
   }
 
   /**
+   * Assigns a new selected key based on key selections from
+   * another entity's key.
+   *
+   * This is used to generate a selected key for _value types_.
+   */
+  private setSelectedKeyFromExternalSelections(): void {
+    if (this.isEntity) {
+      // This method is only meant to be used when the
+      // object is a value type. It the object is an entity,
+      // don't proceed
+      return;
+    }
+    let selectedKey: Key | undefined;
+    this._externalKeySelections.forEach((selections) => {
+      if (selectedKey) {
+        selectedKey.merge(new Key(this.typename, selections.toString()));
+      } else {
+        selectedKey = new Key(this.typename, selections.toString());
+      }
+    });
+
+    if (!selectedKey) {
+      return;
+    }
+
+    this.setSelectedKey(selectedKey);
+  }
+
+  /**
    * Gets the keys used either by default or in other entity keys.
    *
    * @returns {Key[]} The used keys
    */
   private getUsedKeys(): Key[] {
-    if (!this.isEntity || !this._selectedKey) {
+    if (!this.isEntity) {
+      this.setSelectedKeyFromExternalSelections();
+    }
+
+    if (!this._selectedKey) {
       return [];
     }
 
@@ -537,6 +588,17 @@ export class ObjectType {
   }
 
   /**
+   * Add key selections found in another entity's key.
+   *
+   * @param {KeyField[]} selections - The selections found in another entity's key
+   */
+  public addExternalKeySelections(selections: KeyField[]): void {
+    this._externalKeySelections = [
+      ...new Set([...this._externalKeySelections, ...selections]),
+    ];
+  }
+
+  /**
    * Creates the object's AST.
    *
    * @returns {ObjectTypeDefinitionNode} The object's AST.
@@ -544,14 +606,17 @@ export class ObjectType {
   public toAst(): ObjectTypeDefinitionNode {
     let froidFields: FieldDefinitionNode[] = [];
     let froidInterfaces: NamedTypeNode[] = [];
+    let finalKeyDirective: ConstDirectiveNode | undefined;
+    const finalKey = this.finalKey;
+
     if (this.isEntity) {
       froidFields = [
         FroidSchema.createIdField(this.getTagDirectivesForIdField()),
       ];
       froidInterfaces = [implementsNodeInterface];
+      finalKeyDirective = finalKey?.toDirective();
     }
-    const finalKey = this.finalKey;
-    const finalKeyDirective = finalKey?.toDirective();
+
     const fields = [...froidFields, ...this.getFinalFields(finalKey)];
     return {
       ...this.node,
