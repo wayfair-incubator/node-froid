@@ -12,7 +12,6 @@ import {
   ObjectTypeDefinitionNode,
   ScalarTypeDefinitionNode,
   SchemaExtensionNode,
-  StringValueNode,
   parse,
   print,
   specifiedScalarTypes,
@@ -346,6 +345,7 @@ export class FroidSchema {
       }
 
       existingNode.addExternallySelectedFields(keyField.selections);
+      existingNode.addExternalKeySelections(keyField.selections);
 
       this.generateFroidDependency(keyField.selections, existingNode.allFields);
     });
@@ -363,43 +363,6 @@ export class FroidSchema {
           node.kind === Kind.OBJECT_TYPE_EXTENSION) &&
         !FroidSchema.isRootType(node.name.value)
     ) as ObjectTypeNode[];
-  }
-
-  /**
-   * Get contract @tag directives for an ID field. Returns all occurrences of unique @tag
-   * directives used across all fields included in the node's @key directive
-   *
-   * @param {ObjectTypeDefinitionNode} node - The node to process `@key` directives for
-   * @returns {ConstDirectiveNode[]} A list of `@tag` directives to use for the given `id` field
-   */
-  private getTagDirectivesForIdField(
-    node: ObjectTypeDefinitionNode
-  ): ConstDirectiveNode[] {
-    const tagDirectiveNames = this.extensionAndDefinitionNodes
-      .filter((obj) => obj.name.value === node.name.value)
-      .flatMap((obj) => {
-        const taggableNodes = obj.fields?.flatMap((field) => [
-          field,
-          ...(field?.arguments || []),
-        ]);
-        return taggableNodes?.flatMap((field) =>
-          field.directives
-            ?.filter((directive) => directive.name.value === DirectiveName.Tag)
-            .map(
-              (directive) =>
-                (directive?.arguments?.[0].value as StringValueNode).value
-            )
-        );
-      })
-      .filter(Boolean)
-      .sort() as string[];
-
-    const uniqueTagDirectivesNames: string[] = [
-      ...new Set(tagDirectiveNames || []),
-    ];
-    return uniqueTagDirectivesNames.map<ConstDirectiveNode>((tagName) =>
-      FroidSchema.createTagDirective(tagName)
-    );
   }
 
   /**

@@ -549,7 +549,7 @@ describe('FroidSchema class', () => {
           bookId: String!
         }
 
-        type Magazine implements Node @key(fields: "magazineId publisher { __typename address { __typename country } }") {
+        type Magazine implements Node @key(fields: "magazineId publisher { __typename address { __typename country postalCode } }") {
           "The globally unique identifier."
           id: ID!
           magazineId: String!
@@ -877,6 +877,247 @@ describe('FroidSchema class', () => {
           id: ID!
           book: Book!
         }
+      `
+    );
+  });
+
+  it('generates a compound key when there is a value type between the dependant entities', () => {
+    const bookSchema = gql`
+      type Foo @key(fields: "bar { baz { bazKey } }") {
+        bar: [Bar!]!
+      }
+
+      type Bar {
+        baz: [Baz!]!
+      }
+
+      type Baz @key(fields: "bazId bazKey") {
+        bazId: Int!
+        bazKey: String!
+      }
+    `;
+
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: ['storefront', 'internal'],
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+      extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+      type Bar {
+        baz: [Baz!]!
+      }
+
+      type Baz implements Node @key(fields: "bazId bazKey") {
+        "The globally unique identifier."
+        id: ID!
+        bazId: Int!
+        bazKey: String!
+      }
+
+      type Foo implements Node @key(fields: "bar { __typename baz { __typename bazId bazKey } }") {
+        "The globally unique identifier."
+        id: ID!
+        bar: [Bar!]!
+      }
+
+      "The global identification interface implemented by all entities."
+      interface Node @tag(name: "internal") @tag(name: "storefront") {
+        "The globally unique identifier."
+        id: ID!
+      }
+
+      type Query {
+        "Fetches an entity by its globally unique identifier."
+        node(
+          "A globally unique entity identifier."
+          id: ID!
+        ): Node @tag(name: "internal") @tag(name: "storefront")
+      }
+      `
+    );
+  });
+
+  it('generates a compound key when there are multiple value types between the dependant entities', () => {
+    const bookSchema = gql`
+      type Foo @key(fields: "bar1 { bar2 { baz { bazKey } } }") {
+        bar1: [Bar1!]!
+      }
+
+      type Bar1 {
+        bar2: Bar2
+      }
+
+      type Bar2 {
+        baz: [Baz!]!
+      }
+
+      type Baz @key(fields: "bazId bazKey") {
+        bazId: Int!
+        bazKey: String!
+      }
+    `;
+
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: ['storefront', 'internal'],
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+      extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+      type Bar1 {
+        bar2: Bar2
+      }
+
+      type Bar2 {
+        baz: [Baz!]!
+      }
+
+      type Baz implements Node @key(fields: "bazId bazKey") {
+        "The globally unique identifier."
+        id: ID!
+        bazId: Int!
+        bazKey: String!
+      }
+
+      type Foo implements Node @key(fields: "bar1 { __typename bar2 { __typename baz { __typename bazId bazKey } } }") {
+        "The globally unique identifier."
+        id: ID!
+        bar1: [Bar1!]!
+      }
+
+      "The global identification interface implemented by all entities."
+      interface Node @tag(name: "internal") @tag(name: "storefront") {
+        "The globally unique identifier."
+        id: ID!
+      }
+
+      type Query {
+        "Fetches an entity by its globally unique identifier."
+        node(
+          "A globally unique entity identifier."
+          id: ID!
+        ): Node @tag(name: "internal") @tag(name: "storefront")
+      }
+      `
+    );
+  });
+
+  it('generates a compound key when there are multiple value types mixed in with dependant entities', () => {
+    const bookSchema = gql`
+      type Foo
+        @key(
+          fields: "barEntity { barValue { bazEntity { bazValue { quxEntity { quxKey } } } } }"
+        ) {
+        barEntity: [BarEntity!]!
+      }
+
+      type BarEntity
+        @key(
+          fields: "barKey barValue { bazEntity { bazValue { quxEntity { quxKey } } } }"
+        ) {
+        barKey: String!
+        barValue: [BarValue!]!
+      }
+
+      type BarValue {
+        bazEntity: BazEntity
+      }
+
+      type BazEntity @key(fields: "bazKey bazValue { quxEntity { quxKey } }") {
+        bazKey: String!
+        bazValue: [BazValue!]!
+      }
+
+      type BazValue {
+        quxEntity: [QuxEntity!]!
+      }
+
+      type QuxEntity @key(fields: "quxKey quxId") {
+        quxId: Int!
+        quxKey: String!
+      }
+    `;
+
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: ['storefront', 'internal'],
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+      extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+      type BarEntity implements Node @key(fields: "barKey barValue { __typename bazEntity { __typename bazKey bazValue { __typename quxEntity { __typename quxId quxKey } } } }") {
+        "The globally unique identifier."
+        id: ID!
+        barKey: String!
+        barValue: [BarValue!]!
+      }
+
+      type BarValue {
+        bazEntity: BazEntity
+      }
+
+      type BazEntity implements Node @key(fields: "bazKey bazValue { __typename quxEntity { __typename quxId quxKey } }") {
+        "The globally unique identifier."
+        id: ID!
+        bazKey: String!
+        bazValue: [BazValue!]!
+      }
+
+      type BazValue {
+        quxEntity: [QuxEntity!]!
+      }
+
+      type Foo implements Node @key(fields: "barEntity { __typename barKey barValue { __typename bazEntity { __typename bazKey bazValue { __typename quxEntity { __typename quxId quxKey } } } } }") {
+        "The globally unique identifier."
+        id: ID!
+        barEntity: [BarEntity!]!
+      }
+
+      "The global identification interface implemented by all entities."
+      interface Node @tag(name: "internal") @tag(name: "storefront") {
+        "The globally unique identifier."
+        id: ID!
+      }
+
+      type Query {
+        "Fetches an entity by its globally unique identifier."
+        node(
+          "A globally unique entity identifier."
+          id: ID!
+        ): Node @tag(name: "internal") @tag(name: "storefront")
+      }
+
+      type QuxEntity implements Node @key(fields: "quxId quxKey") {
+        "The globally unique identifier."
+        id: ID!
+        quxId: Int!
+        quxKey: String!
+      }
       `
     );
   });
