@@ -3009,6 +3009,31 @@ describe('FroidSchema class', () => {
     );
   });
 
+  it('provides a helpful message when failing to stringify the FROID schema', () => {
+    const productSchema = gql`
+      type Product @key(fields: "__typename") {
+        name: String
+      }
+    `;
+    const subgraphs = new Map();
+    subgraphs.set('product-subgraph', productSchema);
+
+    let errorMessage;
+    try {
+      generateSchema({
+        subgraphs,
+        froidSubgraphName: 'relay-subgraph',
+        federationVersion: FED2_DEFAULT_VERSION,
+      });
+    } catch (error) {
+      errorMessage = error.message;
+    }
+
+    expect(errorMessage).toMatch(
+      'Failed to parse key fields "" for type "Product"'
+    );
+  });
+
   it('generates schema document AST', () => {
     const productSchema = gql`
       type Product @key(fields: "upc") {

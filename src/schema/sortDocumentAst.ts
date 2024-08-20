@@ -193,7 +193,11 @@ function sortChildren(node: NamedNode): NamedNode {
   }
 
   const directives = node?.directives
-    ? {directives: sortDirectives(sortKeyDirectiveFields(node.directives))}
+    ? {
+        directives: sortDirectives(
+          sortKeyDirectiveFields(node.name.value, node.directives)
+        ),
+      }
     : {};
 
   if (
@@ -254,10 +258,12 @@ function sortChildren(node: NamedNode): NamedNode {
 /**
  * Sorts the `fields` argument of any @key directives in a list of directives.
  *
+ * @param {string} typename - The typename of the node the directive belongs to
  * @param {ConstDirectiveNode[]} directives - A list of directives that may include the @key directive
  * @returns {ConstDirectiveNode[]} The list of directives after any key fields have been sorted
  */
 function sortKeyDirectiveFields(
+  typename: string,
   directives: readonly ConstDirectiveNode[]
 ): readonly ConstDirectiveNode[] {
   return directives.map((directive) => {
@@ -285,7 +291,7 @@ function sortKeyDirectiveFields(
           ...fieldsArgument,
           value: {
             ...fieldsArgument.value,
-            value: Key.getSortedSelectionSetFields(fields),
+            value: Key.getSortedSelectionSetFields(typename, fields),
           },
         },
       ],

@@ -71,7 +71,7 @@ export class Key {
       parseableField = Key.getKeyDirectiveFields(parseableField);
     }
     (
-      Key.parseKeyFields(parseableField)
+      Key.parseKeyFields(this.typename, parseableField)
         .definitions[0] as OperationDefinitionNode
     )?.selectionSet?.selections?.forEach((selection) =>
       this.addSelection(selection)
@@ -174,6 +174,7 @@ export class Key {
    */
   public toString(): string {
     return Key.getSortedSelectionSetFields(
+      this.typename,
       this._fields.map((field) => field.toString()).join(' ')
     );
   }
@@ -210,10 +211,22 @@ export class Key {
    * Parses a key fields string into AST.
    *
    * @param {string} keyFields - The key fields string
+   * @param {string} typename - The typename of the node the directive belongs to
    * @returns {DocumentNode} The key fields represented in AST
    */
-  private static parseKeyFields(keyFields: string): DocumentNode {
-    return parse(`{${keyFields}}`, {noLocation: true});
+  private static parseKeyFields(
+    typename: string,
+    keyFields: string
+  ): DocumentNode {
+    try {
+      return parse(`{${keyFields}}`, {noLocation: true});
+    } catch (error) {
+      throw new Error(
+        `Failed to parse key fields "${keyFields}" for type "${typename}" due to error: ${
+          (error as Error).message
+        }`
+      );
+    }
   }
 
   /**
@@ -234,12 +247,18 @@ export class Key {
    * Sorts the selection set fields.
    *
    * @param {string} fields - The selection set fields.
+   * @param {string} typename - The typename of the node the directive belongs to
    * @returns {string} The sorted selection set fields.
    */
-  public static getSortedSelectionSetFields(fields: string): string {
+  public static getSortedSelectionSetFields(
+    typename: string,
+    fields: string
+  ): string {
     const selections = Key.sortSelectionSetByNameAscending(
-      (Key.parseKeyFields(fields).definitions[0] as OperationDefinitionNode)
-        .selectionSet
+      (
+        Key.parseKeyFields(typename, fields)
+          .definitions[0] as OperationDefinitionNode
+      ).selectionSet
     );
     return Key.formatSelectionSetFields(print(selections));
   }
