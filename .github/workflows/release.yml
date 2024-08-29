@@ -7,8 +7,8 @@ jobs:
   publish:
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version-file: '.tool-versions'
           cache: 'yarn'
@@ -20,7 +20,7 @@ jobs:
       - run: yarn build:post
 
       - id: 'publish'
-        uses: JS-DevTools/npm-publish@v1
+        uses: JS-DevTools/npm-publish@v3
         with:
           access: 'public'
           token: ${{ secrets.NPM_AUTH_TOKEN }}
