@@ -6,11 +6,15 @@ import {
   StringValueNode,
 } from 'graphql';
 import {Key} from './Key';
-import {DirectiveName, EXTERNAL_DIRECTIVE_AST} from './constants';
+import {
+  DirectiveName,
+  EXTERNAL_DIRECTIVE_AST,
+  SHAREABLE_DIRECTIVE_AST,
+} from './constants';
 import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter, NodeQualifier} from './FroidSchema';
 import {KeyField} from './KeyField';
-import {implementsNodeInterface} from './astDefinitions';
+import {implementsNodeInterface, shareableDirective} from './astDefinitions';
 
 const FINAL_KEY_MAX_DEPTH = 100;
 
@@ -361,6 +365,20 @@ export class ObjectType {
   }
 
   /**
+   * Checks if the type is shareable by looking for @shareable directive
+   * on any of its occurrences across subgraphs.
+   *
+   * @returns {boolean} True if any occurrence has the @shareable directive
+   */
+  public get isShareable(): boolean {
+    return this.occurrences.some((occurrence) =>
+      occurrence.directives?.some(
+        (directive) => directive.name.value === DirectiveName.Shareable
+      )
+    );
+  }
+
+  /**
    * Generates the final key for the node based on all descendant types and their keys (if they have keys).
    *
    * @param {number} depth - The current nesting depth of the key. Defaults to 0.
@@ -512,6 +530,16 @@ export class ObjectType {
    * @returns {FieldDefinitionNode[]} The final fields
    */
   private getFinalFields(finalKey: Key | undefined): FieldDefinitionNode[] {
+    // If the type is shareable, include all fields from the supergraph
+    if (this.isShareable) {
+      return this.allFields.map((field) => ({
+        ...field,
+        description: undefined,
+        directives: [],
+      }));
+    }
+
+    // Original behavior for non-shareable types
     const fieldsList = [
       ...new Set([
         ...(finalKey?.fieldsList || []),
@@ -618,11 +646,16 @@ export class ObjectType {
     }
 
     const fields = [...froidFields, ...this.getFinalFields(finalKey)];
+    const directives = [
+      ...(finalKeyDirective ? [finalKeyDirective] : []),
+      ...(this.isShareable ? [shareableDirective] : []),
+    ];
+
     return {
       ...this.node,
       description: undefined,
       interfaces: froidInterfaces,
-      directives: [...(finalKeyDirective ? [finalKeyDirective] : [])],
+      directives,
       fields,
     };
   }

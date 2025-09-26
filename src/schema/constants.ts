@@ -13,6 +13,7 @@ export enum Directive {
   External = '@external',
   InterfaceObject = '@interfaceObject',
   Key = '@key',
+  Shareable = '@shareable',
   Tag = '@tag',
 }
 
@@ -21,6 +22,7 @@ export enum DirectiveName {
   External = 'external',
   InterfaceObject = 'interfaceObject',
   Key = 'key',
+  Shareable = 'shareable',
   Tag = 'tag',
 }
 
@@ -34,10 +36,16 @@ export const EXTENDS_DIRECTIVE = DirectiveName.Extends;
 export const TAG_DIRECTIVE = DirectiveName.Tag;
 export const KEY_DIRECTIVE = DirectiveName.Key;
 export const INTERFACE_OBJECT_DIRECTIVE = DirectiveName.InterfaceObject;
+export const SHAREABLE_DIRECTIVE = DirectiveName.Shareable;
 
 export const EXTERNAL_DIRECTIVE_AST = {
   kind: Kind.DIRECTIVE,
   name: {kind: Kind.NAME, value: DirectiveName.External},
+} as ConstDirectiveNode;
+
+export const SHAREABLE_DIRECTIVE_AST = {
+  kind: Kind.DIRECTIVE,
+  name: {kind: Kind.NAME, value: DirectiveName.Shareable},
 } as ConstDirectiveNode;
 
 export const DEFAULT_FEDERATION_LINK_IMPORTS = [
