@@ -6,10 +6,7 @@ import {
   StringValueNode,
 } from 'graphql';
 import {Key} from './Key';
-import {
-  DirectiveName,
-  EXTERNAL_DIRECTIVE_AST,
-} from './constants';
+import {DirectiveName, EXTERNAL_DIRECTIVE_AST} from './constants';
 import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter, NodeQualifier} from './FroidSchema';
 import {KeyField} from './KeyField';
