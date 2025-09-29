@@ -535,11 +535,13 @@ export class ObjectType {
       }));
     }
 
-    // Original behavior for non-shareable types
+    const shareableFields = this.getShareableFields();
+    // Original behavior for non-shareable types, plus shareable fields
     const fieldsList = [
       ...new Set([
         ...(finalKey?.fieldsList || []),
         ...this._externallySelectedFields,
+        ...shareableFields.map((field) => field.name.value),
       ]),
     ];
     const fields = fieldsList
@@ -560,6 +562,32 @@ export class ObjectType {
       })
       .filter(Boolean) as FieldDefinitionNode[];
     return fields;
+  }
+
+  /**
+   * Gets all fields that have @shareable directive across all occurrences.
+   *
+   * @returns {FieldDefinitionNode[]} Fields with @shareable directive
+   */
+  private getShareableFields(): FieldDefinitionNode[] {
+    const shareableFields: FieldDefinitionNode[] = [];
+
+    this.occurrences.forEach((occurrence) => {
+      occurrence?.fields?.forEach((field) => {
+        const hasShareableDirective = field.directives?.some(
+          (directive) => directive.name.value === DirectiveName.Shareable
+        );
+
+        if (hasShareableDirective) {
+          // Only add if we haven't already added this field
+          if (!shareableFields.some((f) => f.name.value === field.name.value)) {
+            shareableFields.push(field);
+          }
+        }
+      });
+    });
+
+    return shareableFields;
   }
 
   /**
