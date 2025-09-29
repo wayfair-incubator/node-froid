@@ -1347,6 +1347,143 @@ describe('FroidSchema class', () => {
     );
   });
 
+  it('applies the @shareable directive to types marked with @shareable and includes all fields from supergraph', () => {
+    const bookSchema = gql`
+      type Book @key(fields: "isbn") {
+        isbn: String!
+        title: String!
+        author: Author!
+      }
+
+      type Author @shareable {
+        authorId: Int!
+      }
+    `;
+
+    const authorSchema = gql`
+      type Author @shareable {
+        authorId: Int!
+        name: String!
+        email: String!
+        age: Int
+      }
+    `;
+
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+    subgraphs.set('author-subgraph', authorSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: ['storefront', 'internal'],
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external", "@shareable"])
+
+        type Author @shareable {
+          age: Int
+          authorId: Int!
+          email: String!
+          name: String!
+        }
+
+        type Book implements Node @key(fields: "isbn") {
+          "The globally unique identifier."
+          id: ID!
+          isbn: String!
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+      `
+    );
+  });
+
+  it('applies the @external directive to fields marked with @shareable and includes them in froid schema', () => {
+    const bookSchema = gql`
+      type Book @key(fields: "isbn") {
+        isbn: String!
+        title: String!
+        edition: Edition
+      }
+
+      type Edition @key(fields: "isbn") {
+        isbn: String!
+        publicationYear: Int @shareable
+      }
+    `;
+
+    const editionsSchema = gql`
+      type Edition @key(fields: "isbn") {
+        isbn: String!
+        format: String!
+        pageCount: Int!
+        publicationYear: Int @shareable
+      }
+    `;
+
+    const subgraphs = new Map();
+    subgraphs.set('book-subgraph', bookSchema);
+    subgraphs.set('editions-subgraph', editionsSchema);
+
+    const actual = generateSchema({
+      subgraphs,
+      froidSubgraphName: 'relay-subgraph',
+      contractTags: ['storefront', 'internal'],
+      federationVersion: FED2_DEFAULT_VERSION,
+    });
+
+    expect(actual).toEqual(
+      // prettier-ignore
+      gql`
+        extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@tag", "@external"])
+
+        type Book implements Node @key(fields: "isbn") {
+          "The globally unique identifier."
+          id: ID!
+          isbn: String!
+        }
+
+        type Edition implements Node @key(fields: "isbn") {
+          "The globally unique identifier."
+          id: ID!
+          isbn: String!
+          publicationYear: Int @external
+        }
+
+        "The global identification interface implemented by all entities."
+        interface Node @tag(name: "internal") @tag(name: "storefront") {
+          "The globally unique identifier."
+          id: ID!
+        }
+
+        type Query {
+          "Fetches an entity by its globally unique identifier."
+          node(
+            "A globally unique entity identifier."
+            id: ID!
+          ): Node @tag(name: "internal") @tag(name: "storefront")
+        }
+      `
+    );
+  });
+
   it('uses a custom qualifier to prefer fields', () => {
     const bookSchema = gql`
       type Book @key(fields: "isbn") {

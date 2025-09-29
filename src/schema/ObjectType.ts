@@ -10,7 +10,7 @@ import {DirectiveName, EXTERNAL_DIRECTIVE_AST} from './constants';
 import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter, NodeQualifier} from './FroidSchema';
 import {KeyField} from './KeyField';
-import {implementsNodeInterface} from './astDefinitions';
+import {implementsNodeInterface, shareableDirective} from './astDefinitions';
 
 const FINAL_KEY_MAX_DEPTH = 100;
 
@@ -361,6 +361,20 @@ export class ObjectType {
   }
 
   /**
+   * Checks if the type is shareable by looking for @shareable directive
+   * on any of its occurrences across subgraphs.
+   *
+   * @returns {boolean} True if any occurrence has the @shareable directive
+   */
+  public get isShareable(): boolean {
+    return this.occurrences.some((occurrence) =>
+      occurrence.directives?.some(
+        (directive) => directive.name.value === DirectiveName.Shareable
+      )
+    );
+  }
+
+  /**
    * Generates the final key for the node based on all descendant types and their keys (if they have keys).
    *
    * @param {number} depth - The current nesting depth of the key. Defaults to 0.
@@ -512,10 +526,22 @@ export class ObjectType {
    * @returns {FieldDefinitionNode[]} The final fields
    */
   private getFinalFields(finalKey: Key | undefined): FieldDefinitionNode[] {
+    // If the type is shareable, include all fields from the supergraph
+    if (this.isShareable) {
+      return this.allFields.map((field) => ({
+        ...field,
+        description: undefined,
+        directives: [],
+      }));
+    }
+
+    const shareableFields = this.getShareableFields();
+    // Original behavior for non-shareable types, plus shareable fields
     const fieldsList = [
       ...new Set([
         ...(finalKey?.fieldsList || []),
         ...this._externallySelectedFields,
+        ...shareableFields.map((field) => field.name.value),
       ]),
     ];
     const fields = fieldsList
@@ -536,6 +562,32 @@ export class ObjectType {
       })
       .filter(Boolean) as FieldDefinitionNode[];
     return fields;
+  }
+
+  /**
+   * Gets all fields that have @shareable directive across all occurrences.
+   *
+   * @returns {FieldDefinitionNode[]} Fields with @shareable directive
+   */
+  private getShareableFields(): FieldDefinitionNode[] {
+    const shareableFields: FieldDefinitionNode[] = [];
+
+    this.occurrences.forEach((occurrence) => {
+      occurrence?.fields?.forEach((field) => {
+        const hasShareableDirective = field.directives?.some(
+          (directive) => directive.name.value === DirectiveName.Shareable
+        );
+
+        if (hasShareableDirective) {
+          // Only add if we haven't already added this field
+          if (!shareableFields.some((f) => f.name.value === field.name.value)) {
+            shareableFields.push(field);
+          }
+        }
+      });
+    });
+
+    return shareableFields;
   }
 
   /**
@@ -618,11 +670,16 @@ export class ObjectType {
     }
 
     const fields = [...froidFields, ...this.getFinalFields(finalKey)];
+    const directives = [
+      ...(finalKeyDirective ? [finalKeyDirective] : []),
+      ...(this.isShareable ? [shareableDirective] : []),
+    ];
+
     return {
       ...this.node,
       description: undefined,
       interfaces: froidInterfaces,
-      directives: [...(finalKeyDirective ? [finalKeyDirective] : [])],
+      directives,
       fields,
     };
   }
