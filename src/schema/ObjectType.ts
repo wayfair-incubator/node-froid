@@ -9,7 +9,6 @@ import {Key} from './Key';
 import {
   DirectiveName,
   EXTERNAL_DIRECTIVE_AST,
-  SHAREABLE_DIRECTIVE_AST,
 } from './constants';
 import {ObjectTypeNode} from './types';
 import {FroidSchema, KeySorter, NodeQualifier} from './FroidSchema';
