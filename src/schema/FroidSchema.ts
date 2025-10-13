@@ -20,7 +20,6 @@ import {ObjectTypeNode} from './types';
 import {
   CONTRACT_DIRECTIVE_NAME,
   DEFAULT_FEDERATION_LINK_IMPORTS,
-  Directive,
   DirectiveName,
   FED2_OPT_IN_URL,
   FED2_VERSION_PREFIX,
@@ -185,15 +184,10 @@ export class FroidSchema {
     this.generateFroidDependencies();
 
     // build schema
-    const imports = [...DEFAULT_FEDERATION_LINK_IMPORTS];
-    if (this.hasShareableTypes()) {
-      imports.push(Directive.Shareable);
-    }
-
     this.froidAst = sortDocumentAst({
       kind: Kind.DOCUMENT,
       definitions: [
-        this.createLinkSchemaExtension(imports),
+        this.createLinkSchemaExtension(),
         this.createQueryDefinition(),
         this.createNodeInterface(),
         ...this.createCustomReturnTypes(),
@@ -248,14 +242,7 @@ export class FroidSchema {
         )
       );
 
-      const isShareableValueType = node.directives?.some(
-        (directive) => directive.name.value === DirectiveName.Shareable
-      );
-
-      if (
-        isException ||
-        (!FroidSchema.isEntity(node) && !isShareableValueType)
-      ) {
+      if (isException || !FroidSchema.isEntity(node)) {
         return;
       }
 
@@ -874,16 +861,5 @@ export class FroidSchema {
    */
   private static parseSchema(schema: string): DocumentNode {
     return parse(schema, {noLocation: true});
-  }
-
-  /**
-   * Checks if there are any shareable types in the FROID object types.
-   *
-   * @returns {boolean} True if there are shareable types, false otherwise.
-   */
-  private hasShareableTypes(): boolean {
-    return Object.values(this.froidObjectTypes).some(
-      (objectType) => objectType.isShareable
-    );
   }
 }
